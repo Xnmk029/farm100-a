@@ -1,0 +1,12 @@
+{
+  "version": "0.1.0",
+  "buildTime": "2026-09-07T01:38:22.0724619+08:00",
+  "installer": "F:\\benchmark\\FARM100\\release\\FARM100 Setup 0.1.0.exe",
+  "bytes": 140364149,
+  "sha256": "028B64741C1B923B72FADAFCB64F9D892EADFCFFB4B2CFFDA464248DD03A4114",
+  "signatureStatus": "NotSigned",
+  "packagedUtilityPassed": true,
+  "packagedRenderExitCode": 0,
+  "cleanWindowsAcceptance": "pending",
+  "evidenceDirectory": "artifacts/packaged-qa"
+}

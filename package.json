@@ -1,0 +1,35 @@
+{
+  "name": "farm100", "version": "0.1.0", "private": true, "type": "module",
+  "description": "Deterministic algorithm farm benchmark desktop client",
+  "author": "FARM100", "license": "UNLICENSED",
+  "main": "dist/main.cjs", "packageManager": "pnpm@11.22.0",
+  "engines": {"node": ">=24"},
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "electron .",
+    "dev": "pnpm build && electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "qa:utility": "pnpm build && electron . --qa-utility",
+    "batch": "tsx scripts/batch.ts",
+    "package": "pnpm build && electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": {
+    "quickjs-emscripten": "0.32.0", "pixi.js": "8.20.1",
+    "react": "19.2.8", "react-dom": "19.2.8", "monaco-editor": "0.55.1", "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "electron": "44.2.0", "electron-builder": "26.15.3", "vite": "8.2.2",
+    "typescript": "5.9.3", "tsx": "4.21.0", "esbuild": "0.27.3",
+    "@types/node": "24.10.13", "@types/react": "19.2.14", "@types/react-dom": "19.2.3"
+  },
+  "build": {
+    "appId": "local.farm100.desktop", "productName": "FARM100",
+    "electronDist": "node_modules/electron/dist",
+    "directories": {"output": "release"},
+    "files": ["dist/**/*", "examples/**/*", "scenarios/**/*", "package.json"],
+    "asarUnpack": ["**/*.wasm"],
+    "win": {"target": "nsis", "signAndEditExecutable": false},
+    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true}
+  }
+}
