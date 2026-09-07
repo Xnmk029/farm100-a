@@ -1,0 +1,160 @@
+{
+  "version": "0.3.0-alpha.1",
+  "createdAt": "2026-09-08T05:43:48.958544+08:00",
+  "files": [
+    {
+      "path": "F:\\benchmark\\FARM100\\release\\garden-preview\\win-unpacked\\FARM100.exe",
+      "bytes": 246202368,
+      "sha256": "f687998afc6c71486956b55eb399f7b23e6b81c84a38cb6863c7e45ba98ee2fa"
+    },
+    {
+      "path": "F:\\benchmark\\FARM100\\release\\garden-preview\\win-unpacked\\resources\\app.asar",
+      "bytes": 178021628,
+      "sha256": "95c03e9ce8d51af165eae9a96aa7060540373b38c7fabcc17207c0f1d1f55336"
+    }
+  ],
+  "typecheck": true,
+  "tests": {
+    "passed": 17,
+    "failed": 0
+  },
+  "utility": {
+    "pass": true,
+    "reason": "finished",
+    "harvests": 362,
+    "tick": 41439,
+    "inventory": {
+      "grain": 4,
+      "roots": 2,
+      "water": 20
+    },
+    "events": 5105
+  },
+  "ui": {
+    "pass": true,
+    "checks": [
+      "panel 鐮旂┒",
+      "panel 鍔犲伐",
+      "panel 浠诲姟",
+      "panel 鎵嬪唽",
+      "fresh land and resource gate",
+      "beginner program through utility bridge",
+      "research consumes grain",
+      "direct action final state is paused",
+      "editor preserved",
+      "save and reopen through shipped handlers"
+    ],
+    "dimensions": {
+      "width": 1920,
+      "height": 1080,
+      "dpr": 1,
+      "overflow": false
+    },
+    "first": {
+      "events": 74,
+      "grain": 12
+    },
+    "research": {
+      "events": 1,
+      "grain": 0,
+      "unlocks": [
+        "carrot"
+      ]
+    }
+  },
+  "assets": {
+    "pass": true,
+    "assets": [
+      {
+        "name": "composter",
+        "dimensions": [
+          320,
+          320
+        ],
+        "objects": 12,
+        "alphaBounds": [
+          97,
+          118,
+          222,
+          229
+        ]
+      },
+      {
+        "name": "workbench",
+        "dimensions": [
+          320,
+          320
+        ],
+        "objects": 10,
+        "alphaBounds": [
+          97,
+          115,
+          222,
+          229
+        ]
+      },
+      {
+        "name": "oilpress",
+        "dimensions": [
+          320,
+          320
+        ],
+        "objects": 8,
+        "alphaBounds": [
+          97,
+          99,
+          222,
+          229
+        ]
+      },
+      {
+        "name": "loom",
+        "dimensions": [
+          320,
+          320
+        ],
+        "objects": 14,
+        "alphaBounds": [
+          97,
+          95,
+          222,
+          229
+        ]
+      },
+      {
+        "name": "pantry",
+        "dimensions": [
+          320,
+          320
+        ],
+        "objects": 18,
+        "alphaBounds": [
+          97,
+          99,
+          222,
+          229
+        ]
+      },
+      {
+        "name": "workshop",
+        "dimensions": [
+          320,
+          320
+        ],
+        "objects": 10,
+        "alphaBounds": [
+          97,
+          101,
+          222,
+          229
+        ]
+      }
+    ]
+  },
+  "limits": [
+    "Development machine only; clean Windows acceptance pending",
+    "File paths selected by QA; native dialog interaction not accepted",
+    "No reference-game parity claim",
+    "Audio listening, challenge families and multiple drones incomplete"
+  ]
+}

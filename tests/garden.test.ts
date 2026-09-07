@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
-import {Garden,GardenStop,gardenDefault,gardenAt,gardenRun,applyGardenEvent,copyGarden,validateGardenRun,ready,type GardenRequest} from '../packages/garden/core';
+import {Garden,GardenStop,legacyGardenDefault as gardenDefault,gardenAt,gardenRun,applyGardenEvent,copyGarden,validateGardenRun,ready,type GardenRequest} from '../packages/garden/core';
 import {executeGarden} from '../packages/garden/runner';
 
 test('garden budgets and invalid actions never advance time or mutate resources',()=>{

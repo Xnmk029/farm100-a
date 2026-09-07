@@ -174,6 +174,50 @@ def prop(kind):
         cylinder((0,0,.45),.14,.9,'wood',6)
         for z,r in [(1.0,.8),(1.5,.66),(2,.48)]:cylinder((0,0,z),r,1.2,'grassdark' if z==1 else 'leaf',7,top=.04)
 
+def facility(kind):
+    cube((0,0,.08),(1.85,1.5,.16),'stone',.04)
+    if kind=='composter':
+        for x in [-.8,.8]:cube((x,0,.45),(.13,1.3,.75),'woodlight',.02)
+        for y in [-.6,.6]:
+            for z in [.24,.48,.7]:cube((0,y,z),(1.65,.12,.17),'wood',.015)
+        ico((0,0,.45),(.7,.48,.35),'soil',2)
+        for x in [-.3,.3]:ico((x,0,.72),(.24,.19,.08),'leaf')
+    elif kind=='workbench':
+        for x in [-.65,.65]:
+            for y in [-.45,.45]:cube((x,y,.45),(.16,.16,.75),'wood')
+        cube((0,0,.86),(1.7,1.15,.18),'woodlight',.035)
+        for x in [-.3,0,.3]:cube((x,0,1.0),(.17,.85,.13),'ivory')
+        cylinder((.6,0,1.02),.2,.15,'roof',8)
+    elif kind=='oilpress':
+        for x in [-.6,.6]:cube((x,0,.85),(.16,.25,1.5),'woodlight')
+        cube((0,0,1.56),(1.5,.35,.16),'wood')
+        cylinder((0,0,.52),.48,.75,'teal',12)
+        cylinder((0,0,1.18),.07,.8,'roof',8)
+        cube((0,0,1.65),(1.3,.09,.09),'roof')
+        cylinder((.65,-.38,.34),.22,.5,'gold',10)
+    elif kind=='loom':
+        for x in [-.65,.65]:cube((x,0,.95),(.15,.22,1.7),'woodlight')
+        for z in [.35,1.65]:cube((0,0,z),(1.5,.2,.13),'wood')
+        for x in [-.45,-.3,-.15,0,.15,.3,.45]:stem((x,0,.38),(x,0,1.6),.022,'ivory')
+        cube((0,-.04,.75),(1,.05,.65),'gold')
+        cylinder((.45,-.48,.35),.22,.5,'ivory',10)
+    elif kind=='pantry':
+        for x in [-.7,.7]:cube((x,0,.75),(.15,.7,1.4),'wood')
+        for z in [.25,.8,1.4]:
+            cube((0,0,z),(1.55,.9,.1),'woodlight')
+            if z<1.4:
+                for x in [-.4,0,.4]:
+                    cylinder((x,0,z+.22),.14,.33,'pumpkin' if z<.5 else 'teal',10)
+                    cylinder((x,0,z+.41),.15,.055,'ivory',10)
+    elif kind=='workshop':
+        cube((0,0,.66),(1.4,1.1,1.15),'teal',.08)
+        cube((0,-.58,.85),(.8,.08,.45),'dark',.02)
+        for x in [-.25,0,.25]:cube((x,-.64,.86),(.09,.035,.1),'blue')
+        cylinder((0,0,1.33),.4,.18,'roof',8)
+        for x in [-.55,.55]:cylinder((x,0,1.47),.09,.55,'ivory',8)
+        cube((.76,0,.65),(.2,.55,.15),'woodlight')
+
+
 def drone(angle):
     before=set(bpy.data.objects)
     cube((0,0,.12),(.75,.62,.3),'ivory',.11)
@@ -213,14 +257,17 @@ def render(name,build):
     manifest['assets'][name]={'file':name+'.png','objects':len(objs)}
     print('ASSET_DONE '+name,flush=True)
 
-for kind in ['grass','soil','wet','path']:
-    for v in range(2):render(f'tile-{kind}-{v}',lambda k=kind,v=v:tile(k,v))
-for kind in ['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal']:
-    for stage in range(4):render(f'{kind}-{stage}',lambda k=kind,s=stage:crop(k,s))
-for kind in ['fence','crate','tank','barn','rock','pine']:render(kind,lambda k=kind:prop(k))
-for angle in range(8):render(f'drone-{angle}',lambda a=angle:drone(a))
+facilities_only='--facilities-only' in sys.argv
+if not facilities_only:
+    for kind in ['grass','soil','wet','path']:
+        for v in range(2):render(f'tile-{kind}-{v}',lambda k=kind,v=v:tile(k,v))
+    for kind in ['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal']:
+        for stage in range(4):render(f'{kind}-{stage}',lambda k=kind,s=stage:crop(k,s))
+    for kind in ['fence','crate','tank','barn','rock','pine']:render(kind,lambda k=kind:prop(k))
+    for angle in range(8):render(f'drone-{angle}',lambda a=angle:drone(a))
+for kind in ['composter','workbench','oilpress','loom','pantry','workshop']:render(kind,lambda k=kind:facility(k))
 for ob in bpy.data.objects:
     if ob not in fixed:ob.hide_render=True
-bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'farm-library-v1.blend'))
-(OUT/'manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf8')
+bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/('farm-facilities-v1.blend' if facilities_only else 'farm-library-v1.blend')))
+(OUT/('facilities-manifest.json' if facilities_only else 'manifest.json')).write_text(json.dumps(manifest,indent=2),encoding='utf8')
 print('FARM100_ASSETS_COMPLETE',flush=True)

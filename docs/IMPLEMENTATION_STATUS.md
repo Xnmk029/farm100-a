@@ -1,4 +1,6 @@
-# 重建实施与验收状态
+# 首版重建实施与验收状态
+
+> 本文保留 0.1.0 排序首版的历史证据。当前 0.3.0 农场扩建进展见 [GARDEN_IMPLEMENTATION.md](GARDEN_IMPLEMENTATION.md)，总目标见 [PRODUCT_TARGET_V1.md](PRODUCT_TARGET_V1.md)。
 
 更新时间：2026-09-07。当前为 0.1.0 本地测试版本，不能表述为全部生产验收完成。
 

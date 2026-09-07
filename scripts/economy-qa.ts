@@ -1,0 +1,14 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';
+import {executeGarden} from '../packages/garden/runner';
+import {gardenDefault,stockOf,validateGardenRun} from '../packages/garden/core';
+const source=await readFile('examples/garden-progress.js','utf8');
+const started=performance.now();
+const run=await executeGarden({runId:randomUUID(),config:gardenDefault,source});
+await mkdir('artifacts/economy',{recursive:true});
+await writeFile('artifacts/economy/progression.farmgarden',JSON.stringify(run));
+const report={reason:run.result.reason,message:run.result.message,events:run.events.length,tick:run.result.state.tick,cost:run.result.state.cost,unlocks:run.result.state.economy?.unlocks,quests:run.result.state.economy?.quests,extent:run.result.state.economy?.extent,stock:stockOf(run.result.state),logs:run.logs,elapsedMs:performance.now()-started};
+await writeFile('artifacts/economy/progression-qa.json',JSON.stringify(report,null,2));
+console.log(JSON.stringify(report,null,2));
+validateGardenRun(run);
+if(run.result.reason!=='finished'||run.result.state.economy?.unlocks.length!==20||run.result.state.economy.extent!==8)process.exitCode=1;

@@ -21,7 +21,7 @@ export async function executeGarden(req:GardenRequest,options:{wallMs?:number;me
     if(typeof v==='boolean')return v?vm.true:vm.false;
     if(typeof v==='number')return vm.newNumber(v);
     if(typeof v==='string')return vm.newString(v);
-    const h=vm.newObject();for(const [k,x]of Object.entries(v as object)){const n=value(x);vm.setProp(h,k,n);n.dispose();}return h;
+    const h=Array.isArray(v)?vm.newArray():vm.newObject();for(const [k,x]of Object.entries(v as object)){const n=value(x);vm.setProp(h,k,n);n.dispose();}return h;
   }
   const flush=async()=>{if(sent<sim.events.length){const events=sim.events.slice(sent);sent=sim.events.length;await options.onBatch?.(events);}};
   try{
@@ -35,7 +35,7 @@ export async function executeGarden(req:GardenRequest,options:{wallMs?:number;me
         }catch(e){if(e instanceof GardenStop)outcome={reason:e.reason,message:e.message};throw e;}
       });vm.setProp(vm.global,name,fn);fn.dispose();
     }
-    for(const [name,v]of Object.entries({...Object.fromEntries(Object.keys(directions).map(k=>[k,k])),Wheat:'wheat',Carrot:'carrot'})){
+    for(const [name,v]of Object.entries({...Object.fromEntries(Object.keys(directions).map(k=>[k,k])),Wheat:'wheat',Carrot:'carrot',Tree:'tree',Sunflower:'sunflower',Pumpkin:'pumpkin',Cactus:'cactus',Bean:'bean',Crystal:'crystal'})){
       const h=vm.newString(v);vm.setProp(vm.global,name,h);h.dispose();
     }
     const consoleHandle=vm.newObject(),log=vm.newFunction('log',(...args)=>{

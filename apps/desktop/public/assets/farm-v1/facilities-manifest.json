@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "author": "FARM100 original procedural models",
+  "renderer": "Blender 4.0 EEVEE",
+  "size": 320,
+  "orthoScale": 6,
+  "elevationSin": 0.6622661785325219,
+  "anchor": [
+    0.5,
+    0.5874146757476247
+  ],
+  "assets": {
+    "composter": {
+      "file": "composter.png",
+      "objects": 12
+    },
+    "workbench": {
+      "file": "workbench.png",
+      "objects": 10
+    },
+    "oilpress": {
+      "file": "oilpress.png",
+      "objects": 8
+    },
+    "loom": {
+      "file": "loom.png",
+      "objects": 14
+    },
+    "pantry": {
+      "file": "pantry.png",
+      "objects": 18
+    },
+    "workshop": {
+      "file": "workshop.png",
+      "objects": 10
+    }
+  }
+}

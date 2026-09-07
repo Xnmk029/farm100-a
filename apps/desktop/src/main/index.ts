@@ -10,6 +10,7 @@ import {RequestSchema,VERSION,defaultConfig,type Request,type Run} from '../../.
 import {validateRun} from '../../../../packages/recording';
 import {launchRun} from './host';
 import {launchGarden} from './garden-host';
+import {gardenEconomyQA} from './garden-qa';
 import {GardenConfigSchema,gardenDefault,validateGardenState,validateGardenRun,GARDEN_VERSION,type GardenRun,type GardenRequest} from '../../../../packages/garden/core';
 
 const qa=process.argv.includes('--qa-utility');
@@ -17,7 +18,7 @@ const renderQA=process.argv.includes('--qa-render');
 const gardenQA=process.argv.includes('--qa-garden');
 const gardenUtilityQA=process.argv.includes('--qa-garden-utility');
 const gardenFilm=process.argv.includes('--qa-garden-film');
-if(gardenFilm)app.commandLine.appendSwitch('force-device-scale-factor','1');
+if(renderQA)app.commandLine.appendSwitch('force-device-scale-factor','1');
 // QA capture allocates native image memory outside V8's normal heap accounting.
 // This constant host-only expression exposes GC for the offline capture harness;
 // participant programs still execute exclusively in the isolated QuickJS worker.
@@ -60,16 +61,17 @@ async function qaUtility(){
 }
 app.whenReady().then(async()=>{
   if(gardenUtilityQA){
-    const source=await readFile(path.join(app.getAppPath(),'examples/garden-cycle.js'),'utf8');
+    const source=await readFile(path.join(app.getAppPath(),'examples/garden-progress.js'),'utf8');
     const request={runId:randomUUID(),config:gardenDefault,source};
     const run=validateGardenRun(await launchGarden(request,gardenWorker,()=>{}).promise);
     await atomic(path.join(qaDir(),'garden-run.farmgarden'),JSON.stringify(run));
-    await atomic(path.join(qaDir(),'garden-utility.json'),JSON.stringify({pass:run.result.reason==='finished'&&run.result.state.harvests===gardenDefault.size**2*8,reason:run.result.reason,harvests:run.result.state.harvests,tick:run.result.state.tick,inventory:run.result.state.inventory,events:run.events.length},null,2));
-    app.exit(run.result.reason==='finished'?0:1);return;
+    const pass=run.result.reason==='finished'&&run.result.state.economy?.unlocks.length===20&&run.result.state.economy.extent===8;
+    await atomic(path.join(qaDir(),'garden-utility.json'),JSON.stringify({pass,reason:run.result.reason,harvests:run.result.state.harvests,tick:run.result.state.tick,inventory:run.result.state.inventory,events:run.events.length},null,2));
+    app.exit(pass?0:1);return;
   }
   if(qa){try{await qaUtility();}catch(e){await atomic(path.join(qaDir(),'utility-qa-error.json'),JSON.stringify({error:String(e)}));app.exit(1);}return;}
   if(renderQA&&gardenQA){
-    const source=await readFile(path.join(app.getAppPath(),'examples/garden-cycle.js'),'utf8');
+    const source=await readFile(path.join(app.getAppPath(),'examples/garden-progress.js'),'utf8');
     gardenDemo=await launchGarden({runId:randomUUID(),config:gardenDefault,source},gardenWorker,()=>{}).promise;
   }
   if(renderQA&&process.argv.includes('--qa-replay')){
@@ -87,7 +89,7 @@ app.whenReady().then(async()=>{
   win.webContents.on('will-navigate',(event)=>event.preventDefault());
   win.webContents.session.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
   secureHandler('examples',async()=>({reference:await readFile(path.join(app.getAppPath(),'examples/reference.js'),'utf8'),improved:await readFile(path.join(app.getAppPath(),'examples/cached-insertion.js'),'utf8'),runs:renderRuns}));
-  secureHandler('gardenExamples',async()=>({source:await readFile(path.join(app.getAppPath(),'examples/garden-cycle.js'),'utf8'),run:gardenDemo,preferSort:renderQA&&!gardenQA}));
+  secureHandler('gardenExamples',async()=>({source:await readFile(path.join(app.getAppPath(),'examples/garden-start.js'),'utf8'),run:gardenDemo,preferSort:renderQA&&!gardenQA}));
   secureHandler('gardenViewReady',()=>{resolveGardenReady();return true;});
   secureHandler('gardenFrameReady',(frame)=>{if(pendingFrame&&pendingFrame.id===frame){pendingFrame.resolve();pendingFrame=undefined;}return true;});
   secureHandler('gardenStart',async(arg)=>{
@@ -109,14 +111,14 @@ app.whenReady().then(async()=>{
     if(typeof arg.source!=='string'||Buffer.byteLength(arg.source)>1048576)throw Error('代码超出限制');
     const r=await dialog.showSaveDialog(win!,{defaultPath:'farm100.garden.json',filters:[{name:'农场存档',extensions:['json']}]});
     if(r.canceled||!r.filePath)return false;
-    await atomic(r.filePath,JSON.stringify({format:'farm100-garden-save',version:GARDEN_VERSION,config,state,source:arg.source}));return true;
+    await atomic(r.filePath,JSON.stringify({format:'farm100-garden-save',version:config.rule??'garden-v0.2.0',config,state,source:arg.source}));return true;
   });
   secureHandler('gardenOpen',async()=>{
     const r=await dialog.showOpenDialog(win!,{filters:[{name:'农场存档或运行',extensions:['json','farmgarden']}],properties:['openFile']});if(r.canceled)return null;
     const doc=JSON.parse(await readBounded(r.filePaths[0]));
     if(doc.format==='farm100-garden')return {run:validateGardenRun(doc)};
-    if(doc.format!=='farm100-garden-save'||doc.version!==GARDEN_VERSION||typeof doc.source!=='string'||Buffer.byteLength(doc.source)>1048576)throw Error('不是受支持的农场存档');
-    const config=GardenConfigSchema.parse(doc.config);return {config,state:validateGardenState(doc.state,config),source:doc.source};
+    if(doc.format!=='farm100-garden-save'||![GARDEN_VERSION,'garden-v0.2.0'].includes(doc.version)||typeof doc.source!=='string'||Buffer.byteLength(doc.source)>1048576)throw Error('不是受支持的农场存档');
+    const config=GardenConfigSchema.parse(doc.config);if(doc.version!==(config.rule??'garden-v0.2.0'))throw Error('存档与规则版本不一致');return {config,state:validateGardenState(doc.state,config),source:doc.source};
   });
   secureHandler('gardenExport',async(arg)=>{
     const run=validateGardenRun(arg);const r=await dialog.showSaveDialog(win!,{defaultPath:'farm100.farmgarden',filters:[{name:'农场完整运行',extensions:['farmgarden']}]});
@@ -182,7 +184,9 @@ app.whenReady().then(async()=>{
     for(const [width,height]of [[1280,720],[1920,1080]]){
       win.setContentSize(width,height);await new Promise(r=>setTimeout(r,1800));
       const image=await win.webContents.capturePage();await writeFile(path.join(dir,`${gardenQA?'garden':renderRuns?'comparison':'desktop'}-${width}x${height}.png`),image.toPNG());
-    }app.exit(0);return;
+    }
+    if(gardenQA&&process.argv.includes('--qa-economy-ui'))await gardenEconomyQA(win,dir);
+    app.exit(0);return;
   }
   win.on('closed',()=>{active?.cancel();gardenActive?.cancel();win=undefined;});
 }).catch(async error=>{

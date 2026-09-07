@@ -10,3 +10,7 @@ Electron 默认应用图标随 Electron 分发；当前测试安装包尚未定�
 # 2026-09-08 原创农场资产扩展
 
 新增 54 张 Blender 渲染透明 PNG 与可编辑 `.blend` 模型库，全部由 `scripts/assets/build_farm.py` 本地生成。来源、复现命令、已接入与预备素材范围见 `GARDEN_IMPLEMENTATION.md`。本次未调用图像生成 API，也未引入外部模型或原版游戏素材。资产已进入 `apps/desktop/public/assets/farm-v1/` 并随构建分发。
+
+## 2026-09-08 加工设施
+
+新增 6 张原创设施 PNG，总计 60 张。独立可编辑源库 assets/source/farm-facilities-v1.blend，清单 facilities-manifest.json；同一脚本加 --facilities-only 可复现。设施随科技解锁显示，加工进度按真实事件时间绘制。

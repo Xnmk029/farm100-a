@@ -1,10 +1,10 @@
 import {useEffect,useRef} from 'react';
-import {Application,Assets,Container,Graphics,Sprite,Texture} from 'pixi.js';
+import {Application,Assets,Container,Graphics,Sprite,Texture,Text} from 'pixi.js';
 import 'pixi.js/unsafe-eval';
 import {stageOf,ready,type GardenState,type GardenEvent} from '../garden/core';
 
 const SIN=10/Math.sqrt(228),ANCHOR=.5+.7*Math.sqrt(128)/Math.sqrt(228)/6;
-const names=[...['grass','soil','wet','path'].flatMap(k=>[0,1].map(v=>`tile-${k}-${v}`)),...['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal'].flatMap(k=>[0,1,2,3].map(s=>`${k}-${s}`)),...['barn','tank','crate','fence','pine','rock'],...Array.from({length:8},(_,i)=>`drone-${i}`)];
+const names=[...['grass','soil','wet','path'].flatMap(k=>[0,1].map(v=>`tile-${k}-${v}`)),...['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal'].flatMap(k=>[0,1,2,3].map(s=>`${k}-${s}`)),...['barn','tank','crate','fence','pine','rock','composter','workbench','oilpress','loom','pantry','workshop'],...Array.from({length:8},(_,i)=>`drone-${i}`)];
 let textures:Promise<Record<string,Texture>>|undefined;
 function load(){Assets.setPreferences({preferWorkers:false,preferCreateImageBitmap:false});return textures??=Promise.all(names.map(async n=>[n,await Assets.load<Texture>(`${import.meta.env.BASE_URL}assets/farm-v1/${n}.png`)] as const)).then(Object.fromEntries).catch(e=>{textures=undefined;throw e;});}
 type Props={state:GardenState;event?:GardenEvent;nextEvent?:GardenEvent;clock:number;cinematicClock?:number;follow:boolean;grid:boolean;selected:number;onSelect:(index:number)=>void;resetKey:number;onReady?:()=>void};
@@ -24,7 +24,7 @@ export function GardenView(props:Props){
       const sprite=(name:string,x:number,y:number,parent:Container,scale=1)=>{
         const s=new Sprite(atlas[name]);s.anchor.set(.5,ANCHOR);s.width=s.height=ratio*scale;const p=point(x,y);s.position.set(p.x,p.y);s.zIndex=(x+y)*100;parent.addChild(s);return s;
       };
-      const tiles:Sprite[]=[],plants:{node:Container;image:Sprite;ghost:Sprite;key:string;time:number;old:number}[]=[];
+      const tiles:Sprite[]=[],plants:{node:Container;shadow:Graphics;image:Sprite;ghost:Sprite;key:string;time:number;old:number}[]=[];
       for(let y=-3;y<size+3;y++)for(let x=-3;x<size+3;x++){
         const inside=x>=0&&y>=0&&x<size&&y<size;
         const variant=((x*7+y*11+size)%2+2)%2;
@@ -35,18 +35,30 @@ export function GardenView(props:Props){
           const node=new Container(),p=point(x,y);node.position.set(p.x,p.y);node.zIndex=(x+y)*100+10;objects.addChild(node);
           const shadow=new Graphics().ellipse(0,1,TW*.28,TH*.17).fill({color:0x283b24,alpha:.15});node.addChild(shadow);
           const image=sprite('wheat-0',0,0,node),ghost=sprite('wheat-0',0,0,node);image.position.set(0,0);ghost.position.set(0,0);image.visible=ghost.visible=false;
-          plants[index]={node,image,ghost,key:'',time:1,old:0};
+          plants[index]={node,shadow,image,ghost,key:'',time:1,old:0};
         }else if((x===-3||y===-3||x===size+2||y===size+2)&&((x*13+y*7)&3)!==0){
           sprite((x+y)%3===0?'tree-3':'pine',x+.12,y-.1,objects,.8+((x*x+y*y)%4)*.1);
         }else if(!path&&((x*13+y*7)&15)===0)sprite('rock',x,y,objects);
       }
       sprite('barn',-1.65,-1.4,objects,1.45);sprite('tank',size+.8,-1,objects,1.2);
+      const facilities=[
+        {asset:'composter',unlock:'composting',recipe:'compost',x:-1.8,y:.6},
+        {asset:'workbench',unlock:'carpentry',recipe:'boards',x:-1.8,y:2.6},
+        {asset:'oilpress',unlock:'oilpress',recipe:'oil',x:-1.8,y:4.6},
+        {asset:'loom',unlock:'fiberwork',recipe:'rope',x:-1.8,y:6.6},
+        {asset:'pantry',unlock:'canning',recipe:'preserves',x:1,y:size+1.2},
+        {asset:'workshop',unlock:'workshop',recipe:'parts',x:3,y:size+1.2},
+      ].map(f=>({...f,image:sprite(f.asset,f.x,f.y,objects,.95)}));
+      const processing=new Graphics();fx.addChild(processing);
       sprite('crate',-1,size-.6,objects,.85);sprite('crate',-.8,size+.6,objects,.7);
       for(let x=0;x<size;x++)sprite('fence',x,-.64,objects);
       for(let y=0;y<size;y++){
         const s=sprite('fence',size-.4,y,objects);s.scale.x*=-1;
       }
       const selection=new Graphics();fx.addChild(selection);
+      const boundary=new Graphics();fx.addChild(boundary);
+      const conditions=new Graphics();fx.addChild(conditions);
+      const traits=Array.from({length:size*size},(_,i)=>{const text=new Text({text:'',style:{fontFamily:'Consolas',fontSize:16,fill:0xffedb3,stroke:{color:0x243a27,width:3}}});text.anchor.set(.5,1);const p=point(i%size,Math.floor(i/size));text.position.set(p.x,p.y-28);fx.addChild(text);return text;});
       const marker=new Graphics();fx.addChild(marker);
       const droneShadow=new Graphics().ellipse(0,0,21,9).fill({color:0x14291c,alpha:.23});fx.addChild(droneShadow);
       const drone=new Container(),body=sprite('drone-0',0,0,drone);body.position.set(0,0);objects.addChild(drone);
@@ -61,26 +73,40 @@ export function GardenView(props:Props){
         world.scale.set(fit*zoom);world.position.set(element.clientWidth/2+pan.x,element.clientHeight*.53+pan.y);
       };
       const emit=(e:GardenEvent)=>{
-        if(e.value===false)return;const p=point(e.x,e.y);
-        const color=e.action==='water'?0x79d8eb:e.action==='harvest'?0xf4d36c:e.action==='plant'?0x9dc961:0xb99a68;
-        const count=e.action==='harvest'?18:e.action==='water'?12:e.action==='till'?9:e.action==='plant'?7:0;
-        for(let i=0;i<count;i++){
+        if(e.value===false)return;
+        const action=e.action.replace('_area',''),harvesting=action==='harvest';
+        const positions=harvesting?e.changes.filter(([,c])=>c.crop===null).map(([i])=>point(i%size,Math.floor(i/size))):e.action.endsWith('_area')?e.changes.filter(([i])=>Math.abs(i%size-e.x)<=1&&Math.abs(Math.floor(i/size)-e.y)<=1).map(([i])=>point(i%size,Math.floor(i/size))):[point(e.x,e.y)];
+        const color=action==='water'?0x79d8eb:harvesting?0xf4d36c:action==='plant'?0x9dc961:action==='repair'?0xc9a8ec:0xb99a68;
+        const count=harvesting?18:action==='water'?12:['till','repair','fertilize'].includes(action)?9:action==='plant'?7:0;
+        for(const p of positions)for(let i=0;i<count;i++){
           const a=((e.seq*19+i*137)%360)*Math.PI/180,v=12+(i*17%40),s=new Graphics();
-          if(e.action==='water')s.ellipse(0,0,1.8,3.8).fill(color);else s.rect(-2,-2,4,4).fill(color);
+          if(action==='water')s.ellipse(0,0,1.8,3.8).fill(color);else s.rect(-2,-2,4,4).fill(color);
           s.position.set(p.x,p.y-8);fx.addChild(s);particles.push({s,vx:Math.cos(a)*v,vy:-24-Math.abs(Math.sin(a))*38,life:0,max:.6+(i%4)*.13,spin:(i%3-1)*3});
         }
       };
       const paint=()=>{
         const {state,event,selected,grid,resetKey}=latest.current;
         if(resetKey!==lastReset){zoom=1;pan={x:0,y:0};lastReset=resetKey;layout();}
+        for(const f of facilities)f.image.visible=state.economy?.unlocks.includes(f.unlock)??false;
+        conditions.clear();
+        const extent=state.economy?.extent??size;
         for(let i=0;i<plants.length;i++){
           const c=state.cells[i],p=plants[i],key=c.crop?`${c.crop}-${stageOf(c)}`:'';
+          const locked=i%size>=extent||Math.floor(i/size)>=extent,pos=point(i%size,Math.floor(i/size));
+          tiles[i].tint=locked?0x678272:0xffffff;
+          p.shadow.visible=!!c.crop;
+          p.image.tint=c.damaged?0xb68393:0xffffff;
+          const showTrait=c.crop&&(c.crop==='cactus'||c.crop==='sunflower');
+          traits[i].visible=!!showTrait;traits[i].text=showTrait?String(c.trait??0):'';
+          if(c.damaged){conditions.moveTo(pos.x-5,pos.y-35).lineTo(pos.x+3,pos.y-24).lineTo(pos.x-3,pos.y-18).lineTo(pos.x+6,pos.y-7).stroke({color:0xffb6a0,width:3});conditions.circle(pos.x+16,pos.y-30,6).fill(0xf29471);}
           tiles[i].texture=atlas[`tile-${c.soil?(c.water>0?'wet':'soil'):'grass'}-${i%2}`];
           if(key!==p.key){
             p.ghost.texture=p.image.texture;p.ghost.visible=p.key!=='';p.ghost.alpha=1;p.old=1;p.time=0;
             p.key=key;p.image.visible=!!key;p.image.alpha=0;if(key)p.image.texture=atlas[key];
           }
         }
+        boundary.clear();
+        if(extent<size){const corners=[point(-.5,-.5),point(extent-.5,-.5),point(extent-.5,extent-.5),point(-.5,extent-.5)];boundary.poly(corners.flatMap(p=>[p.x,p.y])).closePath().stroke({color:0xe4d196,alpha:.8,width:3});}
         selection.clear();
         const diamond=(x:number,y:number,color:number,alpha:number,width:number)=>{const p=point(x,y);selection.moveTo(p.x,p.y-TH/2).lineTo(p.x+TW/2,p.y).lineTo(p.x,p.y+TH/2).lineTo(p.x-TW/2,p.y).closePath().stroke({color,alpha,width});};
         if(grid)for(let y=0;y<size;y++)for(let x=0;x<size;x++)diamond(x,y,0xe6edc9,.22,1);
@@ -115,6 +141,15 @@ export function GardenView(props:Props){
           p.ghost.alpha=1-p.time;p.ghost.visible=p.old>0&&p.time<1;p.ghost.y=p.key?0:-p.time*18;
         }
         const next=latest.current.nextEvent;
+        processing.clear();
+        const facility=facilities.find(f=>next?.action==='craft'&&next.value!==false&&next.args[0]===f.recipe);
+        if(facility){const p=point(facility.x,facility.y),u=Math.max(0,Math.min(1,(latest.current.clock-next!.fromTick)/(next!.tick-next!.fromTick)));processing.ellipse(p.x,p.y,37,15).stroke({color:0xeed487,width:2,alpha:.6});processing.rect(p.x-24,p.y-55,48,4).fill(0x30412c).rect(p.x-24,p.y-55,48*u,4).fill(0xf0d889);}
+
+        for(let i=0;i<plants.length;i++){const pos=point(i%size,Math.floor(i/size));plants[i].node.position.set(pos.x,pos.y);}
+        if(next?.action==='swap'&&next.value===true){
+          const a=latest.current.state.y*size+latest.current.state.x,dir=next.args[0],b=a+(dir==='East'?1:dir==='West'?-1:dir==='South'?size:-size);
+          if(plants[a]&&plants[b]){const p=point(a%size,Math.floor(a/size)),q=point(b%size,Math.floor(b/size)),f=Math.max(0,Math.min(1,(latest.current.clock-next.fromTick)/(next.tick-next.fromTick))),u=f*f*(3-2*f),arc=Math.sin(f*Math.PI)*18;plants[a].node.position.set(p.x+(q.x-p.x)*u,p.y+(q.y-p.y)*u-arc);plants[b].node.position.set(q.x+(p.x-q.x)*u,q.y+(p.y-q.y)*u+arc);}
+        }
         let position=target;
         if(next?.action==='move'&&next.value===true){const end=point(next.x,next.y),f=Math.max(0,Math.min(1,(latest.current.clock-next.fromTick)/(next.tick-next.fromTick))),u=f*f*(3-2*f);position={x:target.x+(end.x-target.x)*u,y:target.y+(end.y-target.y)*u};body.texture=atlas[`drone-${({South:0,East:2,North:4,West:6} as Record<string,number>)[next.facing]??0}`];}
         drone.position.set(position.x,position.y-23+Math.sin(elapsed*3)*2);
