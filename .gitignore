@@ -4,3 +4,4 @@ release/
 artifacts/
 *.log
 .DS_Store
+*.blend1

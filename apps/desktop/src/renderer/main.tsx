@@ -8,10 +8,11 @@ import {defaultConfig,copyState,type Config,type Run,type State,type Event,type 
 import {Simulation,violations} from '../../../../packages/simulation';
 import {applyEvent,stateAt,sequenceAtCost} from '../../../../packages/recording/replay';
 import './style.css';
+import {GardenWorkspace,type GardenAPI} from './garden';
 
 type FarmAPI={examples:()=>Promise<{reference:string;improved:string;runs?:Run[]}>;start:(r:unknown)=>Promise<string>;cancel:()=>Promise<void>;openCode:()=>Promise<string|null>;
   saveWorkspace:(r:unknown)=>Promise<boolean>;openWorkspace:()=>Promise<any>;openRun:()=>Promise<Run|null>;export:(arg:unknown)=>Promise<boolean>;onProgress:(fn:(p:Progress&{storageError?:string})=>void)=>()=>void};
-declare global {interface Window{farm:FarmAPI;MonacoEnvironment:any}}
+declare global {interface Window{farm:FarmAPI&GardenAPI;MonacoEnvironment:any}}
 window.MonacoEnvironment={getWorker:()=>new EditorWorker()};
 const statusText:Record<string,string>={succeeded:'已通关',incomplete:'未完成收获',budget_exceeded:'预算耗尽',api_error:'API 错误',syntax_error:'语法错误',runtime_error:'程序异常',memory_limit:'内存超限',wall_timeout:'执行超时',recording_limit:'记录超限',cancelled:'已中止',runner_crash:'运行器退出'};
 function CodeEditor({code,onChange,readOnly}:{code:string;onChange:(s:string)=>void;readOnly:boolean}){
@@ -25,7 +26,7 @@ function CodeEditor({code,onChange,readOnly}:{code:string;onChange:(s:string)=>v
   useEffect(()=>{editor.current?.updateOptions({readOnly});},[readOnly]);
   return <div className="editor" ref={container}/>;
 }
-function App(){
+function App({onGarden}:{onGarden:()=>void}){
   useEffect(()=>{const handler=(e:KeyboardEvent)=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();document.getElementById('run-code')?.click();}};window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler);},[]);
   const [config,setConfig]=useState<Config>(defaultConfig),[code,setCode]=useState('// 载入参考解，开始第一次运行。'),[label,setLabel]=useState('人工参考解'),[attempt,setAttempt]=useState(1);
   const [generation,setGeneration]=useState<Generation>({source:''});
@@ -66,7 +67,7 @@ function App(){
   };
   const loadExample=(which:'reference'|'improved')=>{setRun(null);setPlaying(false);setLive(new Simulation(config).initial);setCode(examples[which]);setLabel(which==='reference'?'人工参考解':'缓存插入排序');setAttempt(1);setGeneration({source:''});};
   return <div className="shell">
-    <header><div className="brand"><span className="brand-icon">▥</span><div>FARM<span>100</span><small>算法农场 · 本地测评工作台</small></div></div><nav><span className="nav-active">排序与收获</span><span>规则 v1.0</span></nav><div className="offline"><i/>本地运行 <span>0.1.0</span></div></header>
+    <header><div className="brand"><span className="brand-icon">▥</span><div>FARM<span>100</span><small>算法农场 · 本地测评工作台</small></div></div><nav><span className="nav-active">排序与收获</span><button disabled={busy} onClick={onGarden}>自由农场 ↗</button></nav><div className="offline"><i/>本地运行 <span>规则 1.0</span></div></header>
     <section className="toolbar">
       <label>地图<select disabled={busy||!!batch} value={config.size} onChange={e=>{const size=+e.target.value as 4|8|16;setConfig({...config,size,budget:size===4?2000:size===8?20000:200000});setRun(null);}}>{[4,8,16].map(n=><option key={n} value={n}>{n} × {n}</option>)}</select></label>
       <label>种子<input aria-label="种子" type="number" min="0" max="4294967295" disabled={busy||!!batch} value={config.seed} onChange={e=>{setConfig({...config,seed:Math.max(0,Math.min(4294967295,Math.floor(+e.target.value)||0))});setRun(null);}}/></label>
@@ -97,4 +98,9 @@ function App(){
     </main><footer><span><i/>确定性引擎 · JavaScript / QuickJS</span><span>排序约束由引擎验证 · 回放来自真实事件</span><span>执行 {busy?'运行中':'空闲'} / 回放 {playing?'播放中':'暂停'}</span></footer>
   </div>;
 }
-createRoot(document.getElementById('root')!).render(<App/>);
+function Root(){
+  const [mode,setMode]=useState<'garden'|'sort'>('garden');
+  useEffect(()=>{window.farm?.gardenExamples().then(data=>{if(data.preferSort)setMode('sort');});},[]);
+  return mode==='garden'?<GardenWorkspace Editor={CodeEditor} onSort={()=>setMode('sort')}/>:<App onGarden={()=>setMode('garden')}/>;
+}
+createRoot(document.getElementById('root')!).render(<Root/>);

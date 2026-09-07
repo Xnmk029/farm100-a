@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "author": "FARM100 original procedural models",
+  "renderer": "Blender 4.0 EEVEE",
+  "size": 320,
+  "orthoScale": 6,
+  "elevationSin": 0.6622661785325219,
+  "anchor": [
+    0.5,
+    0.5874146757476247
+  ],
+  "assets": {
+    "tile-grass-0": {
+      "file": "tile-grass-0.png",
+      "objects": 22
+    },
+    "tile-grass-1": {
+      "file": "tile-grass-1.png",
+      "objects": 22
+    },
+    "tile-soil-0": {
+      "file": "tile-soil-0.png",
+      "objects": 15
+    },
+    "tile-soil-1": {
+      "file": "tile-soil-1.png",
+      "objects": 15
+    },
+    "tile-wet-0": {
+      "file": "tile-wet-0.png",
+      "objects": 15
+    },
+    "tile-wet-1": {
+      "file": "tile-wet-1.png",
+      "objects": 15
+    },
+    "tile-path-0": {
+      "file": "tile-path-0.png",
+      "objects": 11
+    },
+    "tile-path-1": {
+      "file": "tile-path-1.png",
+      "objects": 11
+    },
+    "wheat-0": {
+      "file": "wheat-0.png",
+      "objects": 6
+    },
+    "wheat-1": {
+      "file": "wheat-1.png",
+      "objects": 45
+    },
+    "wheat-2": {
+      "file": "wheat-2.png",
+      "objects": 45
+    },
+    "wheat-3": {
+      "file": "wheat-3.png",
+      "objects": 45
+    },
+    "carrot-0": {
+      "file": "carrot-0.png",
+      "objects": 6
+    },
+    "carrot-1": {
+      "file": "carrot-1.png",
+      "objects": 18
+    },
+    "carrot-2": {
+      "file": "carrot-2.png",
+      "objects": 18
+    },
+    "carrot-3": {
+      "file": "carrot-3.png",
+      "objects": 18
+    },
+    "pumpkin-0": {
+      "file": "pumpkin-0.png",
+      "objects": 6
+    },
+    "pumpkin-1": {
+      "file": "pumpkin-1.png",
+      "objects": 15
+    },
+    "pumpkin-2": {
+      "file": "pumpkin-2.png",
+      "objects": 15
+    },
+    "pumpkin-3": {
+      "file": "pumpkin-3.png",
+      "objects": 15
+    },
+    "sunflower-0": {
+      "file": "sunflower-0.png",
+      "objects": 6
+    },
+    "sunflower-1": {
+      "file": "sunflower-1.png",
+      "objects": 28
+    },
+    "sunflower-2": {
+      "file": "sunflower-2.png",
+      "objects": 28
+    },
+    "sunflower-3": {
+      "file": "sunflower-3.png",
+      "objects": 28
+    },
+    "cactus-0": {
+      "file": "cactus-0.png",
+      "objects": 6
+    },
+    "cactus-1": {
+      "file": "cactus-1.png",
+      "objects": 6
+    },
+    "cactus-2": {
+      "file": "cactus-2.png",
+      "objects": 6
+    },
+    "cactus-3": {
+      "file": "cactus-3.png",
+      "objects": 7
+    },
+    "bean-0": {
+      "file": "bean-0.png",
+      "objects": 6
+    },
+    "bean-1": {
+      "file": "bean-1.png",
+      "objects": 13
+    },
+    "bean-2": {
+      "file": "bean-2.png",
+      "objects": 13
+    },
+    "bean-3": {
+      "file": "bean-3.png",
+      "objects": 21
+    },
+    "tree-0": {
+      "file": "tree-0.png",
+      "objects": 6
+    },
+    "tree-1": {
+      "file": "tree-1.png",
+      "objects": 4
+    },
+    "tree-2": {
+      "file": "tree-2.png",
+      "objects": 4
+    },
+    "tree-3": {
+      "file": "tree-3.png",
+      "objects": 4
+    },
+    "crystal-0": {
+      "file": "crystal-0.png",
+      "objects": 6
+    },
+    "crystal-1": {
+      "file": "crystal-1.png",
+      "objects": 5
+    },
+    "crystal-2": {
+      "file": "crystal-2.png",
+      "objects": 5
+    },
+    "crystal-3": {
+      "file": "crystal-3.png",
+      "objects": 5
+    },
+    "fence": {
+      "file": "fence.png",
+      "objects": 4
+    },
+    "crate": {
+      "file": "crate.png",
+      "objects": 8
+    },
+    "tank": {
+      "file": "tank.png",
+      "objects": 7
+    },
+    "barn": {
+      "file": "barn.png",
+      "objects": 10
+    },
+    "rock": {
+      "file": "rock.png",
+      "objects": 2
+    },
+    "pine": {
+      "file": "pine.png",
+      "objects": 4
+    },
+    "drone-0": {
+      "file": "drone-0.png",
+      "objects": 19
+    },
+    "drone-1": {
+      "file": "drone-1.png",
+      "objects": 19
+    },
+    "drone-2": {
+      "file": "drone-2.png",
+      "objects": 19
+    },
+    "drone-3": {
+      "file": "drone-3.png",
+      "objects": 19
+    },
+    "drone-4": {
+      "file": "drone-4.png",
+      "objects": 19
+    },
+    "drone-5": {
+      "file": "drone-5.png",
+      "objects": 19
+    },
+    "drone-6": {
+      "file": "drone-6.png",
+      "objects": 19
+    },
+    "drone-7": {
+      "file": "drone-7.png",
+      "objects": 19
+    }
+  }
+}

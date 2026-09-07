@@ -2,6 +2,10 @@
 
 Windows 本地算法测评客户端，首个关卡为二维作物排序与整田收获。原项目已完整归档；本目录为独立重建的新实现。
 
+2026-09-08 起正在实施完整农场目标。当前源码新增自由农场、原创低多边形资产、小麦/胡萝卜生产循环与农场回放；通过 `pnpm dev` 启动。旧的 0.1.0 安装包只包含排序测评，新增功能和验收进度见 [农场实施记录](docs/GARDEN_IMPLEMENTATION.md)。
+
+农场开发预览版：`release/garden-preview/win-unpacked/FARM100.exe`。这是独立可运行的阶段版本，尚未达到完整产品目标。
+
 ## 使用
 
 可运行 `release/win-unpacked/FARM100.exe`，或使用 `release/FARM100 Setup 0.1.0.exe` 安装包。首屏载入人工参考解，点击“执行代码”（Ctrl+Enter）运行。选择“改进解”后再次运行，可以比较同一地图上的操作成本。
@@ -42,6 +46,8 @@ pnpm package
 
 ## 文档
 
+- [下一阶段产品目标：观赏性与系统深度](docs/PRODUCT_TARGET_V1.md)
+- [完整农场实施记录](docs/GARDEN_IMPLEMENTATION.md)
 - [规则与 API](docs/RULES_API.md)
 - [运行、消息与记录协议](docs/PROTOCOL.md)
 - [实施与验收状态](docs/IMPLEMENTATION_STATUS.md)
