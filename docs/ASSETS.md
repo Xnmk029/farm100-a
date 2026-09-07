@@ -14,3 +14,7 @@ Electron 默认应用图标随 Electron 分发；当前测试安装包尚未定�
 ## 2026-09-08 加工设施
 
 新增 6 张原创设施 PNG，总计 60 张。独立可编辑源库 assets/source/farm-facilities-v1.blend，清单 facilities-manifest.json；同一脚本加 --facilities-only 可复现。设施随科技解锁显示，加工进度按真实事件时间绘制。
+
+## 2026-09-08 探索资产
+
+新增篱墙、锁门、钥匙信标、遗物信标 4 张 PNG，总计 64 张。源库 assets/source/farm-exploration-v1.blend，--exploration-only 可复现，exploration-manifest.json 记录构成。

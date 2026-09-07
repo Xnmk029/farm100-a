@@ -1,4 +1,6 @@
-# 完整农场目标实施记录
+# 0.3 农场基础实施记录
+
+> 当前整体版本已推进到 0.4.0-alpha.1。挑战、探索、并排回放与最新验证见 [CHALLENGE_IMPLEMENTATION.md](CHALLENGE_IMPLEMENTATION.md)。本文保留 0.3 生产经济阶段记录。
 
 更新：2026-09-08。开发预览版本：0.3.0-alpha.1。总目标仍为 PRODUCT_TARGET_V1.md 的 G0–G5；本记录不将阶段成果当作原版同等级验收。
 

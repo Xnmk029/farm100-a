@@ -1,6 +1,7 @@
 import {dialog,type BrowserWindow} from 'electron';
 import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
+import {GARDEN_VERSION} from '../../../../packages/garden/core';
 
 /** Exercises the shipped UI and bridge, without granting gameplay extra resources. */
 export async function gardenEconomyQA(win:BrowserWindow,dir:string){
@@ -34,7 +35,7 @@ export async function gardenEconomyQA(win:BrowserWindow,dir:string){
     dialog.showOpenDialog=(async()=>({canceled:false,filePaths:[savePath]})) as typeof openDialog;
     await click('保存农场');await settle();
     const saved=JSON.parse(await readFile(savePath,'utf8'));
-    if(saved.version!=='garden-v0.3.0'||saved.state.economy.unlocks[0]!=='carrot'||!saved.source.includes('第一课'))throw Error('Saved content incomplete');
+    if(saved.version!==GARDEN_VERSION||saved.state.economy.unlocks[0]!=='carrot'||!saved.source.includes('第一课'))throw Error('Saved content incomplete');
     await click('新农场');await settle();await click('打开农场');await settle();
     if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 1/20')&&document.querySelector('.garden-status').textContent.includes('农场已恢复')`))throw Error('Saved farm did not reopen');
     checks.push('save and reopen through shipped handlers');

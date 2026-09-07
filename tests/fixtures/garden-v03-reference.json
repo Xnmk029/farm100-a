@@ -1,0 +1,13 @@
+{
+  "version": "garden-v0.3.0",
+  "source": "examples/garden-progress.js",
+  "config": {
+    "size": 8,
+    "seed": 42,
+    "budget": 100000,
+    "rule": "garden-v0.3.0"
+  },
+  "events": 5105,
+  "eventHash": "623e1d2bef18c956d25ceb0aac4f11223dbe33300a119a34d7bf6622cb90ef8f",
+  "finalHash": "75ba17bd4abb093b7fb4e29ee0e8e37c8a5a0a7913f354771928688fda5a38ec"
+}

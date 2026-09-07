@@ -218,6 +218,32 @@ def facility(kind):
         cube((.76,0,.65),(.2,.55,.15),'woodlight')
 
 
+def exploration(kind):
+    if kind=='hedge':
+        cube((0,0,.15),(1.95,.4,.3),'stone',.04)
+        for x in [-.68,-.23,.23,.68]:
+            ico((x,0,.62),(.37,.3,.48),'grassdark',1)
+            ico((x,-.03,.88),(.34,.29,.28),'leaf',1)
+    elif kind=='gate':
+        for x in [-.8,.8]:cube((x,0,.68),(.16,.22,1.36),'woodlight',.025)
+        cube((0,0,1.3),(1.85,.25,.14),'woodlight',.025)
+        for x in [-.5,-.25,0,.25,.5]:cube((x,0,.58),(.14,.12,1.0),'roof',.015)
+        for z in [.3,.95]:cube((0,-.03,z),(1.35,.15,.1),'teal')
+        cube((0,-.16,.66),(.23,.15,.27),'gold',.03)
+    elif kind=='relic':
+        cylinder((0,0,.13),.48,.26,'stone',8)
+        cylinder((0,0,.31),.32,.15,'gold',8)
+        ico((0,0,.74),(.27,.27,.39),'blue',1)
+        for x in [-.4,.4]:cylinder((x,0,.5),.055,.65,'ivory',6)
+    elif kind=='key-stone':
+        cylinder((0,0,.11),.43,.22,'stone',8)
+        bpy.ops.mesh.primitive_torus_add(major_segments=12,minor_segments=6,location=(0,0,.94),major_radius=.2,minor_radius=.055,rotation=(math.pi/2,0,0))
+        finish(bpy.context.object,'gold')
+        cube((0,0,.57),(.095,.1,.53),'gold',.015)
+        cube((.09,0,.36),(.24,.1,.08),'gold')
+        cube((.09,0,.48),(.24,.1,.08),'gold')
+
+
 def drone(angle):
     before=set(bpy.data.objects)
     cube((0,0,.12),(.75,.62,.3),'ivory',.11)
@@ -258,16 +284,20 @@ def render(name,build):
     print('ASSET_DONE '+name,flush=True)
 
 facilities_only='--facilities-only' in sys.argv
-if not facilities_only:
+exploration_only='--exploration-only' in sys.argv
+if not facilities_only and not exploration_only:
     for kind in ['grass','soil','wet','path']:
         for v in range(2):render(f'tile-{kind}-{v}',lambda k=kind,v=v:tile(k,v))
     for kind in ['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal']:
         for stage in range(4):render(f'{kind}-{stage}',lambda k=kind,s=stage:crop(k,s))
     for kind in ['fence','crate','tank','barn','rock','pine']:render(kind,lambda k=kind:prop(k))
     for angle in range(8):render(f'drone-{angle}',lambda a=angle:drone(a))
-for kind in ['composter','workbench','oilpress','loom','pantry','workshop']:render(kind,lambda k=kind:facility(k))
+if not exploration_only:
+    for kind in ['composter','workbench','oilpress','loom','pantry','workshop']:render(kind,lambda k=kind:facility(k))
+if not facilities_only:
+    for kind in ['hedge','gate','relic','key-stone']:render(kind,lambda k=kind:exploration(k))
 for ob in bpy.data.objects:
     if ob not in fixed:ob.hide_render=True
-bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/('farm-facilities-v1.blend' if facilities_only else 'farm-library-v1.blend')))
-(OUT/('facilities-manifest.json' if facilities_only else 'manifest.json')).write_text(json.dumps(manifest,indent=2),encoding='utf8')
+bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/('farm-exploration-v1.blend' if exploration_only else 'farm-facilities-v1.blend' if facilities_only else 'farm-library-v1.blend')))
+(OUT/('exploration-manifest.json' if exploration_only else 'facilities-manifest.json' if facilities_only else 'manifest.json')).write_text(json.dumps(manifest,indent=2),encoding='utf8')
 print('FARM100_ASSETS_COMPLETE',flush=True)

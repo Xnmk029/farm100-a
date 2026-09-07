@@ -2,11 +2,15 @@
 
 Windows 本地算法测评客户端，首个关卡为二维作物排序与整田收获。原项目已完整归档；本目录为独立重建的新实现。
 
-2026-09-08 起正在实施完整农场目标。当前源码新增自由农场、原创低多边形资产、小麦/胡萝卜生产循环与农场回放；通过 `pnpm dev` 启动。旧的 0.1.0 安装包只包含排序测评，新增功能和验收进度见 [农场实施记录](docs/GARDEN_IMPLEMENTATION.md)。
+2026-09-08 起正在实施完整农场目标。当前 0.4 源码包含八作物生产与研究、十五个编程挑战、迷宫探索、原创场景资产与同输入并排回放；通过 `pnpm dev` 启动。旧的 0.1.0 安装包只包含排序测评，新增功能与最新证据见 [挑战实施记录](docs/CHALLENGE_IMPLEMENTATION.md) 和 [农场基础记录](docs/GARDEN_IMPLEMENTATION.md)。
 
 农场开发预览版：`release/garden-preview/win-unpacked/FARM100.exe`。这是独立可运行的阶段版本，尚未达到完整产品目标。
 
 ## 使用
+
+当前预览请启动 `release/garden-preview/win-unpacked/FARM100.exe`。新档从一行小麦开始，研究、加工和任务页支持经营；“挑战”页可选关卡和种子，载入基线/改进/失败案例。挑战记录可选择两次相同输入进行并排回放。
+
+### 旧排序首版
 
 可运行 `release/win-unpacked/FARM100.exe`，或使用 `release/FARM100 Setup 0.1.0.exe` 安装包。首屏载入人工参考解，点击“执行代码”（Ctrl+Enter）运行。选择“改进解”后再次运行，可以比较同一地图上的操作成本。
 

@@ -1,6 +1,6 @@
 import {canAfford,CROPS,stockOf,type GardenState} from '../../../../packages/garden/core';
 import {TECH,TECH_BY_ID,RECIPES,QUESTS,RESOURCE_NAMES,type Costs,type Resource} from '../../../../packages/garden/content';
-export type EconomyTab='code'|'research'|'craft'|'quests'|'guide';
+export type EconomyTab='code'|'challenges'|'research'|'craft'|'quests'|'guide';
 const costs=(values:Costs)=>Object.entries(values).map(([key,value])=>`${RESOURCE_NAMES[key as Resource]} ${value}`).join(' · ');
 export function EconomyPanel({tab,state,busy,act}:{tab:EconomyTab;state:GardenState;busy:boolean;act:(source:string)=>void}){
   const e=state.economy;

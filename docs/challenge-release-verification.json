@@ -1,0 +1,223 @@
+{
+  "version": "0.4.0-alpha.1",
+  "createdAt": "2026-09-08T06:54:36.906094+08:00",
+  "typecheck": true,
+  "tests": {
+    "passed": 23,
+    "failed": 0
+  },
+  "challengeSuite": {
+    "pass": true,
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "runs": 900,
+    "positive": 600,
+    "negative": 300
+  },
+  "ui": {
+    "pass": true,
+    "checks": [
+      "picker",
+      "utility execution",
+      "fixed restart after seek",
+      "key and relic replay",
+      "failure remains failure",
+      "session history",
+      "free farm restored",
+      "same clock side-by-side comparison without executing code"
+    ],
+    "baseline": {
+      "goals": [
+        {
+          "id": "relics",
+          "value": 3,
+          "target": 3
+        },
+        {
+          "id": "home",
+          "value": 1,
+          "target": 1
+        }
+      ],
+      "passed": true,
+      "spent": {},
+      "produced": {},
+      "primary": "tick",
+      "tick": 665,
+      "cost": 213,
+      "harvests": 0,
+      "failedActions": 18,
+      "reason": "finished"
+    },
+    "improved": {
+      "goals": [
+        {
+          "id": "relics",
+          "value": 3,
+          "target": 3
+        },
+        {
+          "id": "home",
+          "value": 1,
+          "target": 1
+        }
+      ],
+      "passed": true,
+      "spent": {},
+      "produced": {},
+      "primary": "tick",
+      "tick": 295,
+      "cost": 119,
+      "harvests": 0,
+      "failedActions": 0,
+      "reason": "finished"
+    },
+    "failure": {
+      "goals": [
+        {
+          "id": "relics",
+          "value": 0,
+          "target": 3
+        },
+        {
+          "id": "home",
+          "value": 1,
+          "target": 1
+        }
+      ],
+      "passed": false,
+      "spent": {},
+      "produced": {},
+      "primary": "tick",
+      "tick": 10,
+      "cost": 2,
+      "harvests": 0,
+      "failedActions": 2,
+      "reason": "finished"
+    }
+  },
+  "economyCompatibilityUI": {
+    "pass": true,
+    "checks": [
+      "panel 研究",
+      "panel 加工",
+      "panel 任务",
+      "panel 手册",
+      "fresh land and resource gate",
+      "beginner program through utility bridge",
+      "research consumes grain",
+      "direct action final state is paused",
+      "editor preserved",
+      "save and reopen through shipped handlers"
+    ],
+    "dimensions": {
+      "width": 1920,
+      "height": 1080,
+      "dpr": 1,
+      "overflow": false
+    },
+    "first": {
+      "events": 74,
+      "grain": 12
+    },
+    "research": {
+      "events": 1,
+      "grain": 0,
+      "unlocks": [
+        "carrot"
+      ]
+    }
+  },
+  "movies": [
+    {
+      "file": "F:\\benchmark\\FARM100\\artifacts\\challenges\\sort-film\\garden-motion-22s.mp4",
+      "seconds": 22,
+      "fps": 30,
+      "frames": 660,
+      "wallSeconds": 58.0241924,
+      "startTick": 0,
+      "ticksPerSecond": 24,
+      "mode": "offline event replay with acknowledged frames",
+      "memorySamples": [
+        {
+          "frame": 0,
+          "rss": 122568704
+        },
+        {
+          "frame": 300,
+          "rss": 123699200
+        },
+        {
+          "frame": 600,
+          "rss": 122667008
+        }
+      ],
+      "exitCode": 0,
+      "audio": false,
+      "fullDecodePassed": true,
+      "samplesInspected": true
+    },
+    {
+      "file": "F:\\benchmark\\FARM100\\artifacts\\challenges\\maze-film\\garden-motion-14s.mp4",
+      "seconds": 14,
+      "fps": 30,
+      "frames": 420,
+      "wallSeconds": 37.2877498,
+      "startTick": 0,
+      "ticksPerSecond": 24,
+      "mode": "offline event replay with acknowledged frames",
+      "memorySamples": [
+        {
+          "frame": 0,
+          "rss": 123162624
+        },
+        {
+          "frame": 300,
+          "rss": 123379712
+        }
+      ],
+      "exitCode": 0,
+      "audio": false,
+      "fullDecodePassed": true,
+      "samplesInspected": true
+    }
+  ],
+  "files": [
+    {
+      "path": "F:\\benchmark\\FARM100\\release\\garden-preview\\win-unpacked\\FARM100.exe",
+      "bytes": 246202368,
+      "sha256": "09f06ff9ab05e94ba1c3d9b594e3aa846145b9656b1d720ecd38dfb9c1dea530"
+    },
+    {
+      "path": "F:\\benchmark\\FARM100\\release\\garden-preview\\win-unpacked\\resources\\app.asar",
+      "bytes": 178554377,
+      "sha256": "703f3d4ff1769226f53b5906b2acad7819c26cf317d59103b0ff97817ddd1ad7"
+    }
+  ],
+  "limits": [
+    "Single drone only",
+    "No clean Windows acceptance",
+    "Audio and reference-game comparison pending",
+    "Offline movies are not realtime performance measurements"
+  ]
+}

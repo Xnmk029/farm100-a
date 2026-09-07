@@ -11,6 +11,9 @@ import {validateRun} from '../../../../packages/recording';
 import {launchRun} from './host';
 import {launchGarden} from './garden-host';
 import {gardenEconomyQA} from './garden-qa';
+import {challengeUIQA} from './challenge-qa';
+import {challengeConfig} from '../../../../packages/garden/challenges';
+import {challengeSource} from '../../../../packages/garden/challenge-examples';
 import {GardenConfigSchema,gardenDefault,validateGardenState,validateGardenRun,GARDEN_VERSION,type GardenRun,type GardenRequest} from '../../../../packages/garden/core';
 
 const qa=process.argv.includes('--qa-utility');
@@ -71,8 +74,9 @@ app.whenReady().then(async()=>{
   }
   if(qa){try{await qaUtility();}catch(e){await atomic(path.join(qaDir(),'utility-qa-error.json'),JSON.stringify({error:String(e)}));app.exit(1);}return;}
   if(renderQA&&gardenQA){
-    const source=await readFile(path.join(app.getAppPath(),'examples/garden-progress.js'),'utf8');
-    gardenDemo=await launchGarden({runId:randomUUID(),config:gardenDefault,source},gardenWorker,()=>{}).promise;
+    const id=process.env.FARM100_CHALLENGE;
+    const source=id?challengeSource(id):await readFile(path.join(app.getAppPath(),'examples/garden-progress.js'),'utf8');
+    gardenDemo=await launchGarden({runId:randomUUID(),config:id?challengeConfig(id):gardenDefault,source},gardenWorker,()=>{}).promise;
   }
   if(renderQA&&process.argv.includes('--qa-replay')){
     renderRuns=[];
@@ -117,7 +121,7 @@ app.whenReady().then(async()=>{
     const r=await dialog.showOpenDialog(win!,{filters:[{name:'农场存档或运行',extensions:['json','farmgarden']}],properties:['openFile']});if(r.canceled)return null;
     const doc=JSON.parse(await readBounded(r.filePaths[0]));
     if(doc.format==='farm100-garden')return {run:validateGardenRun(doc)};
-    if(doc.format!=='farm100-garden-save'||![GARDEN_VERSION,'garden-v0.2.0'].includes(doc.version)||typeof doc.source!=='string'||Buffer.byteLength(doc.source)>1048576)throw Error('不是受支持的农场存档');
+    if(doc.format!=='farm100-garden-save'||![GARDEN_VERSION,'garden-v0.3.0','garden-v0.2.0'].includes(doc.version)||typeof doc.source!=='string'||Buffer.byteLength(doc.source)>1048576)throw Error('不是受支持的农场存档');
     const config=GardenConfigSchema.parse(doc.config);if(doc.version!==(config.rule??'garden-v0.2.0'))throw Error('存档与规则版本不一致');return {config,state:validateGardenState(doc.state,config),source:doc.source};
   });
   secureHandler('gardenExport',async(arg)=>{
@@ -161,7 +165,7 @@ app.whenReady().then(async()=>{
       let encoderError='';encoder.stderr.on('data',d=>{encoderError=(encoderError+d.toString()).slice(-4000);});
       const closed=once(encoder,'close');encoder.on('close',()=>{void atomic(path.join(dir,'encoder.log'),encoderError);});
       const startTick=Number(process.env.FARM100_FILM_START)||0;
-      win.webContents.send('gardenPlayback',{tick:startTick,speed:24,cinema:true,playing:false,frameId:-1});
+      win.webContents.send('gardenPlayback',{tick:startTick,speed:24,cinema:true,playing:false,frameId:-1,visualTime:startTick/24});
       await new Promise(r=>setTimeout(r,1500));
       const started=performance.now();
       const memorySamples:{frame:number;rss:number}[]=[];
@@ -169,7 +173,7 @@ app.whenReady().then(async()=>{
         await new Promise<void>((resolve,reject)=>{
           const timer=setTimeout(()=>reject(Error('回放帧未确认')),10000);
           pendingFrame={id:frame,resolve:()=>{clearTimeout(timer);resolve();}};
-          win!.webContents.send('gardenPlayback',{tick:Math.min(gardenDemo!.result.state.tick,startTick+frame*24/fps),speed:24,cinema:true,playing:false,frameId:frame});
+          win!.webContents.send('gardenPlayback',{tick:Math.min(gardenDemo!.result.state.tick,startTick+frame*24/fps),speed:24,cinema:true,playing:false,frameId:frame,visualTime:startTick/24+frame/fps});
         });
         const capture=await win.webContents.capturePage();const bitmap=capture.toJPEG(95);
         if(capture.getSize().width!==1920||capture.getSize().height!==1080)throw Error('Video frame dimensions changed');
@@ -186,6 +190,7 @@ app.whenReady().then(async()=>{
       const image=await win.webContents.capturePage();await writeFile(path.join(dir,`${gardenQA?'garden':renderRuns?'comparison':'desktop'}-${width}x${height}.png`),image.toPNG());
     }
     if(gardenQA&&process.argv.includes('--qa-economy-ui'))await gardenEconomyQA(win,dir);
+    if(gardenQA&&process.argv.includes('--qa-challenge-ui'))await challengeUIQA(win,dir);
     app.exit(0);return;
   }
   win.on('closed',()=>{active?.cancel();gardenActive?.cancel();win=undefined;});

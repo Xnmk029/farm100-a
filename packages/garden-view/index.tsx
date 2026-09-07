@@ -4,7 +4,7 @@ import 'pixi.js/unsafe-eval';
 import {stageOf,ready,type GardenState,type GardenEvent} from '../garden/core';
 
 const SIN=10/Math.sqrt(228),ANCHOR=.5+.7*Math.sqrt(128)/Math.sqrt(228)/6;
-const names=[...['grass','soil','wet','path'].flatMap(k=>[0,1].map(v=>`tile-${k}-${v}`)),...['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal'].flatMap(k=>[0,1,2,3].map(s=>`${k}-${s}`)),...['barn','tank','crate','fence','pine','rock','composter','workbench','oilpress','loom','pantry','workshop'],...Array.from({length:8},(_,i)=>`drone-${i}`)];
+const names=[...['grass','soil','wet','path'].flatMap(k=>[0,1].map(v=>`tile-${k}-${v}`)),...['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal'].flatMap(k=>[0,1,2,3].map(s=>`${k}-${s}`)),...['barn','tank','crate','fence','pine','rock','composter','workbench','oilpress','loom','pantry','workshop','hedge','gate','relic','key-stone'],...Array.from({length:8},(_,i)=>`drone-${i}`)];
 let textures:Promise<Record<string,Texture>>|undefined;
 function load(){Assets.setPreferences({preferWorkers:false,preferCreateImageBitmap:false});return textures??=Promise.all(names.map(async n=>[n,await Assets.load<Texture>(`${import.meta.env.BASE_URL}assets/farm-v1/${n}.png`)] as const)).then(Object.fromEntries).catch(e=>{textures=undefined;throw e;});}
 type Props={state:GardenState;event?:GardenEvent;nextEvent?:GardenEvent;clock:number;cinematicClock?:number;follow:boolean;grid:boolean;selected:number;onSelect:(index:number)=>void;resetKey:number;onReady?:()=>void};
@@ -55,6 +55,22 @@ export function GardenView(props:Props){
       for(let y=0;y<size;y++){
         const s=sprite('fence',size-.4,y,objects);s.scale.x*=-1;
       }
+      const mazeWalls:{image:Sprite;a:number;b:number;gate:boolean}[]=[],mazeLoot:Sprite[]=[];
+      const fog=new Graphics();fx.addChild(fog);
+      if(latest.current.state.maze){
+        const m=latest.current.state.maze;
+        for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+          const i=y*size+x;
+          for(const [bit,dx,dy,flip]of [[4,.5,0,1],[2,0,.5,0],[x===0?8:0,-.5,0,1],[y===0?1:0,0,-.5,0]]){
+            if(!bit||!(m.walls[i]&bit)&&!(m.gates[i]&bit))continue;
+            const gate=!!(m.gates[i]&bit),wall=sprite(gate?'gate':'hedge',x+dx,y+dy,objects,.9);
+            if(flip)wall.scale.x*=-1;
+            wall.zIndex=(x+y+dx+dy)*100+40;
+            mazeWalls.push({image:wall,a:i,b:(y+dy*2)*size+x+dx*2,gate});
+          }
+          const loot=sprite('relic',x,y,objects,.85);loot.zIndex=(x+y)*100+20;mazeLoot[i]=loot;
+        }
+      }
       const selection=new Graphics();fx.addChild(selection);
       const boundary=new Graphics();fx.addChild(boundary);
       const conditions=new Graphics();fx.addChild(conditions);
@@ -76,8 +92,8 @@ export function GardenView(props:Props){
         if(e.value===false)return;
         const action=e.action.replace('_area',''),harvesting=action==='harvest';
         const positions=harvesting?e.changes.filter(([,c])=>c.crop===null).map(([i])=>point(i%size,Math.floor(i/size))):e.action.endsWith('_area')?e.changes.filter(([i])=>Math.abs(i%size-e.x)<=1&&Math.abs(Math.floor(i/size)-e.y)<=1).map(([i])=>point(i%size,Math.floor(i/size))):[point(e.x,e.y)];
-        const color=action==='water'?0x79d8eb:harvesting?0xf4d36c:action==='plant'?0x9dc961:action==='repair'?0xc9a8ec:0xb99a68;
-        const count=harvesting?18:action==='water'?12:['till','repair','fertilize'].includes(action)?9:action==='plant'?7:0;
+        const color=action==='collect'?0x7cdef2:action==='water'?0x79d8eb:harvesting?0xf4d36c:action==='plant'?0x9dc961:action==='repair'?0xc9a8ec:0xb99a68;
+        const count=harvesting?18:action==='water'?12:['till','repair','fertilize','collect'].includes(action)?9:action==='plant'?7:0;
         for(const p of positions)for(let i=0;i<count;i++){
           const a=((e.seq*19+i*137)%360)*Math.PI/180,v=12+(i*17%40),s=new Graphics();
           if(action==='water')s.ellipse(0,0,1.8,3.8).fill(color);else s.rect(-2,-2,4,4).fill(color);
@@ -87,21 +103,30 @@ export function GardenView(props:Props){
       const paint=()=>{
         const {state,event,selected,grid,resetKey}=latest.current;
         if(resetKey!==lastReset){zoom=1;pan={x:0,y:0};lastReset=resetKey;layout();}
+        fog.clear();
+        if(state.maze){
+          for(const w of mazeWalls){w.image.visible=!(w.gate&&state.maze.keys>0);w.image.tint=state.maze.seen[w.a]||state.maze.seen[w.b]?0xffffff:0x82918a;}
+          for(let i=0;i<mazeLoot.length;i++){
+            const seen=state.maze.seen[i],loot=state.maze.loot[i],p=point(i%size,Math.floor(i/size));mazeLoot[i].visible=seen&&!!loot;if(loot)mazeLoot[i].texture=atlas[loot==='key'?'key-stone':'relic'];
+            if(!seen)fog.poly([p.x,p.y-TH/2,p.x+TW/2,p.y,p.x,p.y+TH/2,p.x-TW/2,p.y]).fill({color:0x142d2a,alpha:.6});
+          }
+        }
         for(const f of facilities)f.image.visible=state.economy?.unlocks.includes(f.unlock)??false;
         conditions.clear();
         const extent=state.economy?.extent??size;
         for(let i=0;i<plants.length;i++){
-          const c=state.cells[i],p=plants[i],key=c.crop?`${c.crop}-${stageOf(c)}`:'';
+          const c=state.cells[i],p=plants[i],oldHeight=p.image.height,key=c.crop?`${c.crop}-${stageOf(c)}`:'';
           const locked=i%size>=extent||Math.floor(i/size)>=extent,pos=point(i%size,Math.floor(i/size));
           tiles[i].tint=locked?0x678272:0xffffff;
           p.shadow.visible=!!c.crop;
           p.image.tint=c.damaged?0xb68393:0xffffff;
-          const showTrait=c.crop&&(c.crop==='cactus'||c.crop==='sunflower');
+          const showTrait=c.crop&&(grid||i===selected)&&(c.crop==='cactus'||c.crop==='sunflower');
+          p.image.height=ratio*(c.crop==='cactus'?.65+(c.trait??0)*.055:c.crop==='sunflower'?.88+(c.trait??0)*.025:1);
           traits[i].visible=!!showTrait;traits[i].text=showTrait?String(c.trait??0):'';
           if(c.damaged){conditions.moveTo(pos.x-5,pos.y-35).lineTo(pos.x+3,pos.y-24).lineTo(pos.x-3,pos.y-18).lineTo(pos.x+6,pos.y-7).stroke({color:0xffb6a0,width:3});conditions.circle(pos.x+16,pos.y-30,6).fill(0xf29471);}
-          tiles[i].texture=atlas[`tile-${c.soil?(c.water>0?'wet':'soil'):'grass'}-${i%2}`];
+          tiles[i].texture=atlas[`tile-${state.maze?'path':c.soil?(c.water>0?'wet':'soil'):'grass'}-${i%2}`];
           if(key!==p.key){
-            p.ghost.texture=p.image.texture;p.ghost.visible=p.key!=='';p.ghost.alpha=1;p.old=1;p.time=0;
+            p.ghost.texture=p.image.texture;p.ghost.height=oldHeight;p.ghost.visible=p.key!=='';p.ghost.alpha=1;p.old=1;p.time=0;
             p.key=key;p.image.visible=!!key;p.image.alpha=0;if(key)p.image.texture=atlas[key];
           }
         }
@@ -163,7 +188,7 @@ export function GardenView(props:Props){
       app.render();element.dataset.ready='true';latest.current.onReady?.();
     }).catch(e=>{if(host.current){host.current.dataset.error=String(e);host.current.textContent='农场资产加载失败：'+String(e);}});
     return()=>{dead=true;resize?.disconnect();const el=host.current;if(el){if(wheel)el.removeEventListener('wheel',wheel);if(down)el.removeEventListener('pointerdown',down);if(move)el.removeEventListener('pointermove',move);if(up)el.removeEventListener('pointerup',up);}update.current=()=>{};if(app.renderer)app.destroy(true,{children:true});};
-  },[props.state.size]);
+  },[props.state.size,!!props.state.maze,props.state.seed]);
   useEffect(()=>update.current(),[props.state,props.event,props.selected,props.grid,props.resetKey]);
-  return <div className="garden-canvas" ref={host} aria-label="可拖动缩放的农场画布"/>;
+  return <div className="garden-canvas" ref={host} data-playback-clock={props.clock} aria-label="可拖动缩放的农场画布"/>;
 }
