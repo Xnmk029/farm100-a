@@ -43,7 +43,7 @@
 - 两种窗口尺寸的真实 Electron 画面已检查。首轮发现 1280×720 捕获早于资产就绪；已改为等待资源就绪确认，再捕获画面。资源加载改用普通图片路径，消除了 Pixi worker 对 data URL 的 CSP 报错，未放宽 CSP。
 - 动态回放输出已完成短片验证：按每帧模拟 tick 和渲染确认生成 1080p/30fps 离线视频。最新 5 秒片段为 `artifacts/garden/motion-v3/garden-motion-5s.mp4`，150 帧，首帧完整。导出耗时不能当作实时帧率；影片当前无音轨。早期 v1 的墙钟录制速度偏差、v2 的首帧空白已记录并修复，不作为正式演示。
 - `0.2.0-alpha.1` 开发预览版已生成于 `release/garden-preview/win-unpacked/`。实际分发版的农场 utility process 和两种窗口尺寸渲染检查均退出 0，记录位于 `artifacts/garden/packaged/`。尚未进行干净 Windows 安装验收。
-- 五分钟完整回放正在输出至 `artifacts/garden/full-film/`，只有最终编码结束、文件解码和过程检查通过后才可计入演示验收。
+- 五分钟完整回放首次输出发现 NativeImage 抓帧导致宿主内存升至约 3.5 GB，已主动中止，`artifacts/garden/full-film/` 的未封存影片不可用于验收。已为 QA 离线抓帧加入原生缓冲垃圾回收：重新输出 30 秒、900 帧，主进程 RSS 在第 0/300/600 帧分别约为 136/129/128 MB。见 `artifacts/garden/motion-memory/garden-film-qa.json`。新的五分钟输出使用 `artifacts/garden/full-film-v2/`，最终编码、解码和过程检查完成前仍保持待验。
 
 ## 资产制作与复现
 

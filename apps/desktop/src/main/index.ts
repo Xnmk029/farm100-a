@@ -4,6 +4,8 @@ import {readFile,writeFile,mkdir,stat,rename} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
+import {setFlagsFromString} from 'node:v8';
+import {runInNewContext} from 'node:vm';
 import {RequestSchema,VERSION,defaultConfig,type Request,type Run} from '../../../../packages/protocol';
 import {validateRun} from '../../../../packages/recording';
 import {launchRun} from './host';
@@ -16,6 +18,11 @@ const gardenQA=process.argv.includes('--qa-garden');
 const gardenUtilityQA=process.argv.includes('--qa-garden-utility');
 const gardenFilm=process.argv.includes('--qa-garden-film');
 if(gardenFilm)app.commandLine.appendSwitch('force-device-scale-factor','1');
+// QA capture allocates native image memory outside V8's normal heap accounting.
+// This constant host-only expression exposes GC for the offline capture harness;
+// participant programs still execute exclusively in the isolated QuickJS worker.
+let collectCaptureGarbage:()=>void=()=>{};
+if(gardenFilm){setFlagsFromString('--expose_gc');collectCaptureGarbage=runInNewContext('gc');}
 if(qa||renderQA)app.setPath('userData',path.join(app.getPath('temp'),'farm100-qa-'+randomUUID()));
 let win:BrowserWindow|undefined;let active:ReturnType<typeof launchRun>|undefined;let activeId='';
 let renderRuns:Run[]|undefined;
@@ -155,6 +162,7 @@ app.whenReady().then(async()=>{
       win.webContents.send('gardenPlayback',{tick:startTick,speed:24,cinema:true,playing:false,frameId:-1});
       await new Promise(r=>setTimeout(r,1500));
       const started=performance.now();
+      const memorySamples:{frame:number;rss:number}[]=[];
       for(let frame=0;frame<seconds*fps;frame++){
         await new Promise<void>((resolve,reject)=>{
           const timer=setTimeout(()=>reject(Error('回放帧未确认')),10000);
@@ -164,9 +172,11 @@ app.whenReady().then(async()=>{
         const capture=await win.webContents.capturePage();const bitmap=capture.toJPEG(95);
         if(capture.getSize().width!==1920||capture.getSize().height!==1080)throw Error('Video frame dimensions changed');
         if(!encoder.stdin.write(bitmap))await once(encoder.stdin,'drain');
+        if(frame%15===0)collectCaptureGarbage();
+        if(frame%300===0)memorySamples.push({frame,rss:process.memoryUsage().rss});
       }
       encoder.stdin.end();const [exitCode]=await closed;
-      await atomic(path.join(dir,'garden-film-qa.json'),JSON.stringify({file:target,seconds,fps,frames:seconds*fps,wallSeconds:(performance.now()-started)/1000,startTick,ticksPerSecond:24,mode:'offline event replay with acknowledged frames',exitCode,encoderError:exitCode?encoderError:undefined,audio:false},null,2));
+      await atomic(path.join(dir,'garden-film-qa.json'),JSON.stringify({file:target,seconds,fps,frames:seconds*fps,wallSeconds:(performance.now()-started)/1000,startTick,ticksPerSecond:24,mode:'offline event replay with acknowledged frames',memorySamples,exitCode,encoderError:exitCode?encoderError:undefined,audio:false},null,2));
       app.exit(exitCode===0?0:1);return;
     }
     for(const [width,height]of [[1280,720],[1920,1080]]){
