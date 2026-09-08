@@ -13,6 +13,10 @@ import {launchGarden} from './garden-host';
 import {gardenEconomyQA} from './garden-qa';
 import {challengeUIQA} from './challenge-qa';
 import {fleetUIQA} from './fleet-qa';
+import {crashHistoryQA,historyUIQA,historyUtilityQA} from './history-qa';
+import {GardenJournal,GardenHistory} from '../../../../packages/garden-storage/journal';
+import type {HistoryQuery} from '../../../../packages/garden-storage/types';
+import {z} from 'zod';
 import {challengeConfig} from '../../../../packages/garden/challenges';
 import {challengeSource} from '../../../../packages/garden/challenge-examples';
 import {GardenConfigSchema,gardenDefault,validateGardenState,validateGardenRun,GARDEN_VERSION,type GardenRun,type GardenRequest} from '../../../../packages/garden/core';
@@ -22,23 +26,29 @@ const renderQA=process.argv.includes('--qa-render');
 const gardenQA=process.argv.includes('--qa-garden');
 const gardenUtilityQA=process.argv.includes('--qa-garden-utility');
 const gardenFilm=process.argv.includes('--qa-garden-film');
+const historyCrash=process.argv.includes('--qa-history-crash'),historyQA=process.argv.includes('--qa-history-ui'),historyUtility=process.argv.includes('--qa-history-utility');
+const singleInstance=qa||renderQA||historyCrash||historyUtility||gardenUtilityQA||app.requestSingleInstanceLock();
+if(!singleInstance)app.quit();
 if(renderQA)app.commandLine.appendSwitch('force-device-scale-factor','1');
 // QA capture allocates native image memory outside V8's normal heap accounting.
 // This constant host-only expression exposes GC for the offline capture harness;
 // participant programs still execute exclusively in the isolated QuickJS worker.
 let collectCaptureGarbage:()=>void=()=>{};
 if(gardenFilm){setFlagsFromString('--expose_gc');collectCaptureGarbage=runInNewContext('gc');}
-if(qa||renderQA)app.setPath('userData',path.join(app.getPath('temp'),'farm100-qa-'+randomUUID()));
+if(qa||renderQA||historyCrash||historyUtility)app.setPath('userData',(historyCrash||historyQA)&&process.env.FARM100_QA_PROFILE?path.resolve(process.env.FARM100_QA_PROFILE):path.join(app.getPath('temp'),'farm100-qa-'+randomUUID()));
 let win:BrowserWindow|undefined;let active:ReturnType<typeof launchRun>|undefined;let activeId='';
+app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.show();win.focus();}});
 let renderRuns:Run[]|undefined;
 let gardenDemo:GardenRun|undefined;
 let resolveGardenReady:()=>void;
 let pendingFrame:{id:number;resolve:()=>void}|undefined;
 const gardenReady=new Promise<void>(resolve=>{resolveGardenReady=resolve;});
 let gardenActive:ReturnType<typeof launchGarden>|undefined;
+let gardenStarting=false,gardenStartCancelled=false,gardenActiveId:string|undefined;
 const gardenWorker=path.join(__dirname,'garden-worker.cjs');
 const worker=path.join(__dirname,'worker.cjs');
 const dataDir=()=>path.join(app.getPath('userData'),'farm100');
+const history=()=>new GardenHistory(path.join(dataDir(),'garden-history'),path.join(dataDir(),'gardens'));
 const qaDir=()=>process.env.FARM100_QA_DIR??path.join(app.isPackaged?app.getPath('temp'):app.getAppPath(),'artifacts');
 async function atomic(file:string,text:string){await mkdir(path.dirname(file),{recursive:true});const tmp=file+'.tmp-'+randomUUID();await writeFile(tmp,text,'utf8');await rename(tmp,file);}
 async function readBounded(file:string,max=64*1024*1024){if((await stat(file)).size>max)throw Error('文件超出大小限制');return readFile(file,'utf8');}
@@ -64,6 +74,9 @@ async function qaUtility(){
   await atomic(path.join(qaDir(),'utility-qa.json'),JSON.stringify(report,null,2));app.exit(report.pass?0:1);
 }
 app.whenReady().then(async()=>{
+  if(!singleInstance)return;
+  if(historyCrash){await mkdir(qaDir(),{recursive:true});await crashHistoryQA(history().root,gardenWorker,qaDir());return;}
+  if(historyUtility){await mkdir(qaDir(),{recursive:true});await historyUtilityQA(history().root,gardenWorker,qaDir());app.exit(0);return;}
   if(gardenUtilityQA){
     const source=await readFile(path.join(app.getAppPath(),'examples/garden-progress.js'),'utf8');
     const request={runId:randomUUID(),config:gardenDefault,source};
@@ -100,19 +113,21 @@ app.whenReady().then(async()=>{
   secureHandler('gardenViewReady',()=>{resolveGardenReady();return true;});
   secureHandler('gardenFrameReady',(frame)=>{if(pendingFrame&&pendingFrame.id===frame){pendingFrame.resolve();pendingFrame=undefined;}return true;});
   secureHandler('gardenStart',async(arg)=>{
-    if(gardenActive||active)throw Error('已有程序执行中');
+    if(gardenActive||active||gardenStarting)throw Error('已有程序执行中');
     const config=GardenConfigSchema.parse(arg.config);
     if(typeof arg.source!=='string'||Buffer.byteLength(arg.source)>1048576)throw Error('代码超出限制');
     const req:GardenRequest={runId:randomUUID(),config,source:arg.source,initial:arg.initial?validateGardenState(arg.initial,config):undefined};
-    gardenActive=launchGarden(req,gardenWorker,p=>{if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',p);});
+    gardenStarting=true;gardenStartCancelled=false;
+    try{const journal=await GardenJournal.create(history().root,req);gardenActive=launchGarden(req,gardenWorker,p=>{if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',p);},{journal});gardenActiveId=req.runId;if(gardenStartCancelled)gardenActive.cancel();}finally{gardenStarting=false;}
     const current=gardenActive;
     current.promise.then(async(run)=>{
-      if(gardenActive===current)gardenActive=undefined;
-      let storageError='';try{await atomic(path.join(dataDir(),'gardens',run.runId+'.farmgarden'),JSON.stringify(run));}catch(e){storageError=String(e);}
-      if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',{type:'result',runId:req.runId,run,storageError});
+      if(gardenActive===current){gardenActive=undefined;gardenActiveId=undefined;}
+      if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',{type:'result',runId:req.runId,run});
     });return req.runId;
   });
-  secureHandler('gardenCancel',()=>{gardenActive?.cancel();return true;});
+  secureHandler('gardenCancel',()=>{if(gardenStarting)gardenStartCancelled=true;gardenActive?.cancel();return true;});
+  secureHandler('gardenHistory',async(arg)=>{const query=z.object({query:z.string().max(200).optional(),mode:z.enum(['all','farm','challenge']).optional(),status:z.enum(['all','finished','interrupted']).optional(),offset:z.number().int().min(0).max(1000000).optional(),limit:z.number().int().min(1).max(50).optional()}).parse(arg??{}) as HistoryQuery;return history().list(query,gardenActiveId);});
+  secureHandler('gardenHistoryOpen',async(arg)=>{const {id,origin}=z.object({id:z.string().uuid(),origin:z.enum(['journal','legacy']).optional()}).parse(arg);if(id===gardenActiveId)throw Error('请等待执行结束后打开这次记录');return history().open(id,origin);});
   secureHandler('gardenSave',async(arg)=>{
     const config=GardenConfigSchema.parse(arg.config),state=validateGardenState(arg.state,config);
     if(typeof arg.source!=='string'||Buffer.byteLength(arg.source)>1048576)throw Error('代码超出限制');
@@ -132,7 +147,7 @@ app.whenReady().then(async()=>{
     if(r.canceled||!r.filePath)return false;await atomic(r.filePath,JSON.stringify(run));return true;
   });
   secureHandler('start',async(arg)=>{
-    if(active||gardenActive)throw Error('已有程序在执行');
+    if(active||gardenActive||gardenStarting)throw Error('已有程序在执行');
     const req=RequestSchema.parse({...arg,protocolVersion:VERSION,runId:randomUUID()});activeId=req.runId;
     active=launchRun(req,worker,p=>win?.webContents.send('progress',p),true);
     const current=active;
@@ -195,11 +210,12 @@ app.whenReady().then(async()=>{
     if(gardenQA&&process.argv.includes('--qa-economy-ui'))await gardenEconomyQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-challenge-ui'))await challengeUIQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-fleet-ui'))await fleetUIQA(win,dir);
+    if(gardenQA&&historyQA)await historyUIQA(win,history().root,dir);
     app.exit(0);return;
   }
   win.on('closed',()=>{active?.cancel();gardenActive?.cancel();win=undefined;});
 }).catch(async error=>{
-  if(qa||renderQA||gardenUtilityQA){await atomic(path.join(qaDir(),'qa-error.json'),JSON.stringify({error:String(error),stack:error?.stack}));app.exit(1);}
+  if(qa||renderQA||gardenUtilityQA||historyCrash||historyUtility){await atomic(path.join(qaDir(),'qa-error.json'),JSON.stringify({error:String(error),stack:error?.stack}));app.exit(1);}
   else dialog.showErrorBox('FARM100 启动失败',String(error));
 });
 app.on('window-all-closed',()=>app.quit());

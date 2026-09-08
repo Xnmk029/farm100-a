@@ -1,7 +1,7 @@
 import {FleetGuide} from './fleet-guide';
 import {canAfford,CROPS,stockOf,type GardenState} from '../../../../packages/garden/core';
 import {TECH,TECH_BY_ID,RECIPES,QUESTS,RESOURCE_NAMES,type Costs,type Resource} from '../../../../packages/garden/content';
-export type EconomyTab='code'|'challenges'|'research'|'craft'|'quests'|'guide';
+export type EconomyTab='code'|'challenges'|'research'|'craft'|'quests'|'guide'|'history';
 const costs=(values:Costs)=>Object.entries(values).map(([key,value])=>`${RESOURCE_NAMES[key as Resource]} ${value}`).join(' · ');
 export function EconomyPanel({tab,state,rule,busy,act}:{tab:EconomyTab;state:GardenState;rule?:string;busy:boolean;act:(source:string)=>void}){
   const tech=TECH.filter(t=>rule==='garden-v0.5.0'||!t.id.startsWith('fleet'));

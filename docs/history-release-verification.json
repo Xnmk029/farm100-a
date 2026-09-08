@@ -1,0 +1,122 @@
+{
+  "version": "0.5.1-alpha.1",
+  "rule": "garden-v0.5.0",
+  "date": "2026-09-08T09:07:58.8101105+08:00",
+  "typecheck": true,
+  "tests": {
+    "storageRetestAfterLegacyStatusChange": true,
+    "failed": 0,
+    "storageGroups": 4,
+    "total": 36
+  },
+  "parentCrash": {
+    "id": "61c0f817-a6c4-4932-9e56-a6a921e1bf18",
+    "events": 200,
+    "tick": 63,
+    "profile": "F:\\benchmark\\FARM100\\artifacts\\history\\packaged-profile-final"
+  },
+  "packagedHistory": {
+    "pass": true,
+    "abruptParentExit": 86,
+    "recoveredId": "61c0f817-a6c4-4932-9e56-a6a921e1bf18",
+    "recoveredEvents": 200,
+    "recoveredTick": 63,
+    "newRun": "761bf6ed-1822-413e-a7ee-2e0f04cfac0f",
+    "indexedSeeks": 100,
+    "checks": [
+      "separate process reopening same profile",
+      "durable prefix recovered after abrupt desktop exit",
+      "shared fleet board and cost restored",
+      "explicit pending cancellation",
+      "new run persisted",
+      "open does not execute",
+      "indexed 100-point replay",
+      "search filters"
+    ]
+  },
+  "utility": {
+    "pass": true,
+    "rows": [
+      {
+        "mode": "complete",
+        "reason": "finished",
+        "complete": true,
+        "events": 601,
+        "batches": 11,
+        "storageErrors": 0
+      },
+      {
+        "mode": "cancel-start",
+        "reason": "cancelled",
+        "complete": true,
+        "events": 1,
+        "batches": 1,
+        "storageErrors": 0
+      },
+      {
+        "mode": "cancel",
+        "reason": "cancelled",
+        "complete": true,
+        "events": 66,
+        "batches": 3,
+        "storageErrors": 0
+      },
+      {
+        "mode": "worker-crash",
+        "reason": "runner_crash",
+        "complete": false,
+        "events": 64,
+        "batches": 1,
+        "storageErrors": 0
+      },
+      {
+        "mode": "disk-error",
+        "reason": "runner_crash",
+        "complete": false,
+        "events": 64,
+        "batches": 1,
+        "storageErrors": 1
+      }
+    ]
+  },
+  "regression": {
+    "fleet": true,
+    "stage": "before final free-session restoration fix, which the final history QA exercises",
+    "economy": true,
+    "challenges": true
+  },
+  "hashes": [
+    {
+      "path": "release/garden-preview/win-unpacked/FARM100.exe",
+      "sha256": "EF10769A8C7066E0F09737D20938C893D07A752D2DD4C602E6C30E117C757D76",
+      "bytes": 246202368
+    },
+    {
+      "path": "release/garden-preview/win-unpacked/resources/app.asar",
+      "sha256": "243FF55ECA0330F3B0040FD52A984F3873874EBCE250D2090AA3CDACF771C2AB",
+      "bytes": 179032246
+    },
+    {
+      "path": "artifacts/history/packaged-final/history-ui-qa.json",
+      "sha256": "6517D7952A0309316555BD83D0991B10BB28B159BDD580D4BFAE8F106D1BF28F",
+      "bytes": 537
+    },
+    {
+      "path": "artifacts/history/utility-packaged/history-utility-qa.json",
+      "sha256": "44BE158C0F6F5340E10813038B7E61BF32389E431A4AC91909A5C036716962A1",
+      "bytes": 835
+    }
+  ],
+  "scope": {
+    "corruptTailPrefixRecovery": true,
+    "crossSessionHistory": true,
+    "thirtyMinutePerformanceAccepted": false,
+    "durableBatches": true,
+    "abruptProcessRecovery": true,
+    "boundedWorkerMemory": false,
+    "pagedRenderer": false,
+    "originalGameComparisonAccepted": false,
+    "indexRebuild": true,
+    "indexedSeekPrimitive": true
+  }
+}

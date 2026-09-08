@@ -1,6 +1,6 @@
 # 首版重建实施与验收状态
 
-> 本文保留 0.1.0 排序首版的历史证据。当前 0.5.0 多机阶段进展见 [FLEET_IMPLEMENTATION.md](FLEET_IMPLEMENTATION.md)，总目标见 [PRODUCT_TARGET_V1.md](PRODUCT_TARGET_V1.md)。
+> 本文保留 0.1.0 排序首版的历史证据。当前 0.5.1 进展见 [HISTORY_IMPLEMENTATION.md](HISTORY_IMPLEMENTATION.md)，总目标见 [PRODUCT_TARGET_V1.md](PRODUCT_TARGET_V1.md)。
 
 更新时间：2026-09-07。当前为 0.1.0 本地测试版本，不能表述为全部生产验收完成。
 
