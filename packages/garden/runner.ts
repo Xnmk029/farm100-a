@@ -1,9 +1,11 @@
+import {executeFleet} from '../fleet/runner';
 import {newAsyncContext,type QuickJSHandle} from 'quickjs-emscripten';
 import {directions} from '../protocol';
 import {ACTIONS,Garden,GardenStop,gardenRun,type GardenRequest,type GardenEvent,type GardenOutcome} from './core';
 
 export async function executeGarden(req:GardenRequest,options:{wallMs?:number;memoryBytes?:number;cancelled?:()=>boolean;onBatch?:(events:GardenEvent[])=>Promise<void>}={}){
   if(typeof req.source!=='string'||Buffer.byteLength(req.source)>1048576)throw Error('代码不能超过 1 MiB');
+  if(req.config.drones)return executeFleet(req,options);
   const sim=new Garden(req.config,req.initial),logs:string[]=[];
   const vm=await newAsyncContext();let outcome:{reason:GardenOutcome;message:string}|undefined,diagnosing=false,diagnosticDeadline=0;
   const deadline=performance.now()+(options.wallMs??30000);let sent=0,logBytes=0;

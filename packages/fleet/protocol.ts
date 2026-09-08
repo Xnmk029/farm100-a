@@ -1,0 +1,10 @@
+export const FLEET_APIS=['get_drone_id','get_drone_count','get_time','read_shared','write_shared','compare_exchange','barrier'] as const;
+export const DRONE_COLORS=[0xf0d77b,0x83d7d2,0xecaaa0,0xb8a1e4,0xa8ce77,0x83b7eb,0xefba76,0xe4acd9];
+export type FleetAPI=typeof FLEET_APIS[number];
+export type SharedValue=number|string|boolean|null;
+export type Drone={id:number;x:number;y:number;facing:'North'|'South'|'East'|'West';cost:number;actions:number;status:'idle'|'waiting'|'done'};
+export type Pending={actor:number;action:string;args:unknown[];start:number;end:number|null;cost:number};
+export type FleetState={drones:Drone[];pending:Pending[];shared:Record<string,SharedValue>};
+export const copyFleet=(f:FleetState):FleetState=>({drones:f.drones.map(d=>({...d})),pending:f.pending.map(p=>({...p,args:[...p.args]})),shared:{...f.shared}});
+export const createFleet=(s:{x:number;y:number;facing:string},count:number):FleetState=>({drones:Array.from({length:count},(_,id)=>({id,x:s.x,y:s.y,facing:s.facing as Drone['facing'],cost:0,actions:0,status:'idle'})),pending:[],shared:{}});
+export const fleetCapacity=(unlocks:string[],challenge?:string)=>challenge?8:unlocks.includes('fleet8')?8:unlocks.includes('fleet4')?4:unlocks.includes('fleet2')?2:1;

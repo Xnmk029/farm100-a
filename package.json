@@ -1,5 +1,5 @@
 {
-  "name": "farm100", "version": "0.4.0-alpha.1", "private": true, "type": "module",
+  "name": "farm100", "version": "0.5.0-alpha.1", "private": true, "type": "module",
   "description": "Deterministic algorithm farm benchmark desktop client",
   "author": "FARM100", "license": "UNLICENSED",
   "main": "dist/main.cjs", "packageManager": "pnpm@11.22.0",
@@ -10,6 +10,7 @@
     "dev": "pnpm build && electron .",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
+    "qa:fleet": "tsx scripts/fleet-qa.ts --full",
     "qa:challenges": "tsx scripts/challenge-qa.ts --full",
     "qa:economy": "tsx scripts/economy-qa.ts",
     "qa:utility": "pnpm build && electron . --qa-utility",

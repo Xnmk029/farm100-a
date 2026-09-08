@@ -1,0 +1,150 @@
+{
+  "version": "0.5.0-alpha.1",
+  "createdAt": "2026-09-08T08:06:58.8509211+08:00",
+  "typecheck": true,
+  "tests": {
+    "passed": 32,
+    "failed": 0
+  },
+  "challengeSuite": {
+    "pass": true,
+    "runs": 1080,
+    "seeds": 20
+  },
+  "fleetSuite": {
+    "benefit": [
+      {
+        "id": "fleet-harvest",
+        "one": 703,
+        "eight": 143,
+        "speedup": 4.916083916083916,
+        "oneCost": 194,
+        "eightCost": 264
+      },
+      {
+        "id": "fleet-repair",
+        "one": 2729,
+        "eight": 650,
+        "speedup": 4.1984615384615385,
+        "oneCost": 2236,
+        "eightCost": 2292
+      }
+    ],
+    "progression": {
+      "research": 23,
+      "ticks": 47043,
+      "events": 5666,
+      "deployed": 8
+    },
+    "pass": true,
+    "runs": 720,
+    "representatives": [
+      {
+        "id": "fleet-overhead",
+        "drones": 1,
+        "repeats": 10,
+        "seeks": 100,
+        "hash": "a3087c17760e81435545f5737baba1d9c55f03034de241dcc57251d5f97f84d2"
+      },
+      {
+        "id": "fleet-repair",
+        "drones": 4,
+        "repeats": 10,
+        "seeks": 100,
+        "hash": "8d4f5274f3d24ef37b208448a589af601089cfa2b90cf8d9454007dd9876c484"
+      },
+      {
+        "id": "fleet-harvest",
+        "drones": 8,
+        "repeats": 10,
+        "seeks": 100,
+        "hash": "0cd195051f467cdd34d7fe392bb51db1a4ca22bc7cda636d5a722db62c2ae73c"
+      }
+    ]
+  },
+  "packagedFleetUI": {
+    "pass": true,
+    "checks": [
+      "fresh research gates",
+      "1 and 8 real worker executions",
+      "partition speedup",
+      "8 actors at 720p and 1080p",
+      "same task comparison",
+      "pending prefix explicitly cancelled",
+      "restart from earned world",
+      "fleet and shared board save/reopen"
+    ],
+    "path": "artifacts/fleet/packaged-final/fleet-ui-qa.json"
+  },
+  "packagedChallengeUI": {
+    "pass": true,
+    "path": "artifacts/fleet/packaged-final/challenge-ui-qa.json"
+  },
+  "economyUI": {
+    "stage": "same milestone, before final label and saved-clock visual adjustments",
+    "pass": true,
+    "path": "artifacts/fleet/economy-packaged/economy-ui-qa.json"
+  },
+  "films": [
+    {
+      "fps": 30,
+      "width": 1920,
+      "fullDecode": true,
+      "height": 1080,
+      "frames": 240,
+      "audio": false,
+      "path": "artifacts/fleet/harvest-film-final/garden-motion-8s.mp4",
+      "seconds": 8
+    },
+    {
+      "fps": 30,
+      "width": 1920,
+      "fullDecode": true,
+      "height": 1080,
+      "frames": 900,
+      "audio": false,
+      "path": "artifacts/fleet/repair-film-final/garden-motion-30s.mp4",
+      "seconds": 30
+    }
+  ],
+  "hashes": [
+    {
+      "path": "release/garden-preview/win-unpacked/FARM100.exe",
+      "bytes": 246202368,
+      "sha256": "F0C00B84890B5D9DA5B2354F46461C6EAF66D0B5F629F1A2BB35F07FA0C37140"
+    },
+    {
+      "path": "release/garden-preview/win-unpacked/resources/app.asar",
+      "bytes": 178958219,
+      "sha256": "D96EEE1ACA4A354A273895101C91A748C68B28E3725DC36B2CC2520226AC168E"
+    },
+    {
+      "path": "artifacts/fleet/full-qa.json",
+      "bytes": 421719,
+      "sha256": "CC68291B614F83FCFAC3B7E46F7FF7ADE591A88389F800D352878D23A3933A0A"
+    },
+    {
+      "path": "artifacts/challenges/suite-qa.json",
+      "bytes": 609453,
+      "sha256": "2CBEC021696D51BC00AC55876891C302E16FF2B03BC3D527A729F19785EE5616"
+    },
+    {
+      "path": "artifacts/fleet/harvest-film-final/garden-motion-8s.mp4",
+      "bytes": 1065760,
+      "sha256": "88842558B662E8C8160A3C8DF9CCACCAE6D386E5B11A1B90D062D4F3579FD240"
+    },
+    {
+      "path": "artifacts/fleet/repair-film-final/garden-motion-30s.mp4",
+      "bytes": 1993249,
+      "sha256": "60982ED402D6F341ED137D909993A54BBC41A8C5858C18FA393D2081DA464013"
+    }
+  ],
+  "remaining": [
+    "streaming persistence and crash prefix recovery",
+    "cross-session history",
+    "32x32 8 drone 30 minute performance",
+    "full audio and five-minute mixed production acceptance",
+    "clean Windows installation and upgrade",
+    "fixed original-game reference and external panel"
+  ]
+}

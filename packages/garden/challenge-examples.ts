@@ -1,6 +1,7 @@
 import {CHALLENGE_BY_ID} from './challenges';
 export function challengeSource(id:string,variant:'baseline'|'improved'|'failure'='improved'){
   const c=CHALLENGE_BY_ID[id];if(!c)throw Error('未知挑战');
+  if(c.fixture.startsWith('fleet-'))return fleetSource(id,variant);
   if(variant==='failure')return '// 失败案例：检查反馈，程序结束不代表完成目标。\n'+(c.fixture==='maze'?'move(North); collect(); // 越界探路，没有收集目标':'craft'===c.fixture?'craft("parts",4);':c.fixture==='repair-chain'?'craft("parts",4); // 未维修收获，缺少矿晶':c.fixture.includes('sort')||c.fixture==='cactus'?'harvest(); // 无序即采收，只得到单株产出':c.family==='空间布局'?'till(); plant(Tree); harvest(); // 生长尚未完成':'harvest(); // 空地或未成熟，无法交付目标');
   const fast=variant==='improved';
   const intro=`// ${c.name} · 人工${fast?'针对性改进解':'朴素基线'}\n// ${c.description}\n`;
@@ -83,4 +84,26 @@ for(const p of trees){go(p[0],p[1]);mature();harvest();}
 ${c.fixture==='mixed-layout'?`${fast?'for(const p of plots(4,1,0,4)){go(p[0],p[1]);if(inspect().damaged)repair();}':''}for(const p of plots(4,1,0,4)){go(p[0],p[1]);mature();harvest();}`:''}
 `;
   throw Error('挑战缺少参考程序');
+}
+
+function fleetSource(id:string,variant:'baseline'|'improved'|'failure'){
+  const fast=variant==='improved';
+  const intro=`// ${CHALLENGE_BY_ID[id].name} · ${variant==='baseline'?'单机承担工作':fast?'协作分工':'失败案例'}\n`;
+  if(variant==='failure')return intro+'get_drone_id(); // 结束程序，但没有交付任何资源。';
+  if(id==='fleet-overhead')return intro+(fast?`const id=get_drone_id(),count=get_drone_count();
+write_shared('ready'+id,true);barrier('集合');
+if(id===0){for(let i=0;i<count;i++)if(!read_shared('ready'+i))throw Error('缺少队友');harvest();}
+barrier('交付');`:'if(get_drone_id()===0)harvest();');
+  return intro+`const id=get_drone_id(),count=get_drone_count(),n=get_size();
+function go(x,y){let p=get_position();while(p.x<x){move(East);p.x++;}while(p.x>x){move(West);p.x--;}while(p.y<y){move(South);p.y++;}while(p.y>y){move(North);p.y--;}}
+`+(id==='fleet-harvest'?`
+for(let y=0;y<n;y++)if(${fast?'y%count===id':'id===0'}){
+  for(let i=0;i<n;i++){const x=y%2?n-1-i:i;go(x,y);harvest();}
+}
+`:`
+for(let x=0;x<8;x++)if(${fast?'x%count===id':'id===0'}){go(x,0);if(!repair())throw Error('维修材料不足');while(!inspect().ready)wait(20);harvest();}
+barrier('矿晶交付');
+if(id===0&&!craft('parts',8))throw Error('装配材料不足');
+barrier('装配完毕');
+`);
 }

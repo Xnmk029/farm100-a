@@ -29,7 +29,7 @@ export async function challengeUIQA(win:BrowserWindow,dir:string){
   await click('关闭对比');await click('程序');
   await click('失败');await click('▶ 从固定初始世界执行');const failed=await waitRun(3);if(evaluateChallenge(failed)!.passed)throw Error('Failure counted as pass');
   await shot('challenge-failure');await click('挑战');await shot('challenge-history');
-  await click('返回农场');await settle();if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 0/20')`))throw Error('Free farm not restored');
+  await click('返回农场');await settle();if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 0/23')`))throw Error('Free farm not restored');
   const report={pass:true,checks:['picker','utility execution','fixed restart after seek','key and relic replay','failure remains failure','session history','free farm restored','same clock side-by-side comparison without executing code'],baseline:evaluateChallenge(base),improved:evaluateChallenge(improved),failure:evaluateChallenge(failed)};
   await writeFile(path.join(dir,'challenge-ui-qa.json'),JSON.stringify(report,null,2));
 }

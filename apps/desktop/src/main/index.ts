@@ -12,6 +12,7 @@ import {launchRun} from './host';
 import {launchGarden} from './garden-host';
 import {gardenEconomyQA} from './garden-qa';
 import {challengeUIQA} from './challenge-qa';
+import {fleetUIQA} from './fleet-qa';
 import {challengeConfig} from '../../../../packages/garden/challenges';
 import {challengeSource} from '../../../../packages/garden/challenge-examples';
 import {GardenConfigSchema,gardenDefault,validateGardenState,validateGardenRun,GARDEN_VERSION,type GardenRun,type GardenRequest} from '../../../../packages/garden/core';
@@ -76,7 +77,9 @@ app.whenReady().then(async()=>{
   if(renderQA&&gardenQA){
     const id=process.env.FARM100_CHALLENGE;
     const source=id?challengeSource(id):await readFile(path.join(app.getAppPath(),'examples/garden-progress.js'),'utf8');
-    gardenDemo=await launchGarden({runId:randomUUID(),config:id?challengeConfig(id):gardenDefault,source},gardenWorker,()=>{}).promise;
+    const drones=Number(process.env.FARM100_DRONES)||undefined;
+    if(drones&&![1,2,4,8].includes(drones))throw Error('无效 QA 部署数');
+    gardenDemo=await launchGarden({runId:randomUUID(),config:id?challengeConfig(id,42,drones as 1|2|4|8|undefined):gardenDefault,source},gardenWorker,()=>{}).promise;
   }
   if(renderQA&&process.argv.includes('--qa-replay')){
     renderRuns=[];
@@ -121,7 +124,7 @@ app.whenReady().then(async()=>{
     const r=await dialog.showOpenDialog(win!,{filters:[{name:'农场存档或运行',extensions:['json','farmgarden']}],properties:['openFile']});if(r.canceled)return null;
     const doc=JSON.parse(await readBounded(r.filePaths[0]));
     if(doc.format==='farm100-garden')return {run:validateGardenRun(doc)};
-    if(doc.format!=='farm100-garden-save'||![GARDEN_VERSION,'garden-v0.3.0','garden-v0.2.0'].includes(doc.version)||typeof doc.source!=='string'||Buffer.byteLength(doc.source)>1048576)throw Error('不是受支持的农场存档');
+    if(doc.format!=='farm100-garden-save'||![GARDEN_VERSION,'garden-v0.4.0','garden-v0.3.0','garden-v0.2.0'].includes(doc.version)||typeof doc.source!=='string'||Buffer.byteLength(doc.source)>1048576)throw Error('不是受支持的农场存档');
     const config=GardenConfigSchema.parse(doc.config);if(doc.version!==(config.rule??'garden-v0.2.0'))throw Error('存档与规则版本不一致');return {config,state:validateGardenState(doc.state,config),source:doc.source};
   });
   secureHandler('gardenExport',async(arg)=>{
@@ -191,6 +194,7 @@ app.whenReady().then(async()=>{
     }
     if(gardenQA&&process.argv.includes('--qa-economy-ui'))await gardenEconomyQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-challenge-ui'))await challengeUIQA(win,dir);
+    if(gardenQA&&process.argv.includes('--qa-fleet-ui'))await fleetUIQA(win,dir);
     app.exit(0);return;
   }
   win.on('closed',()=>{active?.cancel();gardenActive?.cancel();win=undefined;});

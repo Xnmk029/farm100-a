@@ -1,12 +1,15 @@
 import {CROP_CONTENT,TECH_BY_ID,type Costs} from './content';
 import type {GardenConfig,GardenState,GardenRun,Crop} from './economy-core';
-export const CHALLENGE_RULE='garden-v0.4.0';
+export const CHALLENGE_RULE='garden-v0.5.0';
 export type Challenge={id:string;family:'自动耕作'|'空间布局'|'时间与资源'|'排序与合生'|'迷宫探索';tier:1|2|3;name:string;description:string;size:4|6|8;budget:number;target:Costs;primary:'tick'|'cost';fixture:string;allowed:string[];relics?:number;returnHome?:boolean;growthDivisor?:number};
 const observe=['get_size','get_position','inspect','get_inventory','get_progress','wait','move'];
 const farming=[...observe,'till','plant','water','harvest','refill','fertilize','craft','repair','clear'];
 const sorting=[...observe,'swap','harvest'];
 const exploring=['get_size','get_position','sense','collect','move','wait'];
 export const CHALLENGES:Challenge[]=[
+  {id:'fleet-harvest',family:'自动耕作',tier:3,name:'八行麦田的分工',description:'8×8 成熟麦田，交付 192 粮食。比较单机全包与按行分工，部署数可选 1/2/4/8。',size:8,budget:12000,target:{grain:192},primary:'tick',fixture:'fleet-harvest',allowed:observe.concat('harvest')},
+  {id:'fleet-repair',family:'时间与资源',tier:3,name:'协同维修与装配',description:'八株裂隙矿晶，共享 24 木板、8 绳索和8 油。交付 16 零件及 16 矿晶，维修采收后同步装配。',size:8,budget:12000,target:{parts:16,crystal:16},primary:'tick',fixture:'fleet-repair',allowed:farming},
+  {id:'fleet-overhead',family:'自动耕作',tier:1,name:'一株小麦需要几台机',description:'仅起点一株成熟小麦，交付 3 粮食。比较直接采收与全队通信集合，观察小任务的协调开销。',size:4,budget:2000,target:{grain:3},primary:'tick',fixture:'fleet-overhead',allowed:observe.concat('harvest')},
   {id:'farm-1',family:'自动耕作',tier:1,name:'第一片麦田',description:'4×4 空田，产出 48 粮食。比较逐格等熟与整田轮巡。',size:4,budget:12000,target:{grain:48},primary:'tick',fixture:'wheat',allowed:farming},
   {id:'farm-2',family:'自动耕作',tier:2,name:'双季轮作',description:'6×6 从零开始，保留 72 粮食并产出 72 根菜。播种也消耗粮食。',size:6,budget:18000,target:{grain:72,roots:72},primary:'tick',fixture:'rotation',allowed:farming},
   {id:'farm-3',family:'自动耕作',tier:3,name:'闭环堆肥',description:'8×8 从零生产，最终保留 48 堆肥。必须先为根菜与加工分配粮食。',size:8,budget:45000,target:{compost:48},primary:'cost',fixture:'compost',allowed:farming},
@@ -27,7 +30,7 @@ export const CHALLENGE_BY_ID=Object.fromEntries(CHALLENGES.map(c=>[c.id,c])) as 
 export type Maze={walls:number[];gates:number[];seen:boolean[];loot:('key'|'relic'|null)[];keys:number;collected:number;required:number};
 export const mazeDirections={North:{dx:0,dy:-1,bit:1,opposite:2},South:{dx:0,dy:1,bit:2,opposite:1},East:{dx:1,dy:0,bit:4,opposite:8},West:{dx:-1,dy:0,bit:8,opposite:4}} as const;
 export const copyMaze=(m:Maze):Maze=>({...m,walls:[...m.walls],gates:[...m.gates],seen:[...m.seen],loot:[...m.loot]});
-export function challengeConfig(id:string,seed=42):GardenConfig{const c=CHALLENGE_BY_ID[id];if(!c)throw Error('未知挑战');return {rule:CHALLENGE_RULE,challenge:id,size:c.size,budget:c.budget,seed};}
+export function challengeConfig(id:string,seed=42,drones?:1|2|4|8):GardenConfig{const c=CHALLENGE_BY_ID[id];if(!c)throw Error('未知挑战');return {rule:CHALLENGE_RULE,challenge:id,size:c.size,budget:c.budget,seed,...(drones||c.fixture.startsWith('fleet-')?{drones:drones??1}:{})};}
 function rng(seed:number){let n=seed>>>0;return ()=>{n=(n+0x6d2b79f5)|0;let t=Math.imul(n^(n>>>15),1|n);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};}
 export function makeMaze(size:number,seed:number,tier:number,required:number):Maze{
   const random=rng(seed),count=size*size,m:Maze={walls:Array(count).fill(15),gates:Array(count).fill(0),seen:Array(count).fill(false),loot:Array(count).fill(null),keys:0,collected:0,required};
@@ -48,6 +51,9 @@ export function setupChallenge(s:GardenState,c:Challenge){
   const plant=(i:number,crop:Crop,growth=CROP_CONTENT[crop].growth)=>Object.assign(s.cells[i],{soil:true,crop,growth,trait:Math.floor(random()*10),damaged:false,repaired:false});
   const random=rng(s.seed);
   for(const id of ['waterworks','carrot','composting','soilcare'])unlock(id);
+  if(c.fixture==='fleet-harvest')s.cells.forEach((_,i)=>plant(i,'wheat'));
+  if(c.fixture==='fleet-overhead')plant(0,'wheat');
+  if(c.fixture==='fleet-repair'){unlock('workshop');for(let i=0;i<8;i++){plant(i,'crystal',130);s.cells[i].damaged=true;}e.stock.boards=24;e.stock.rope=8;e.stock.oil=8;}
   if(c.fixture==='orchard'||c.fixture==='symbiosis'||c.fixture==='mixed-layout'){
     unlock('trellis');s.inventory.grain=c.fixture==='orchard'?16:64;e.stock.boards=24;
     if(c.fixture==='mixed-layout'){unlock('crystals');e.stock.preserves=4;e.stock.compost=4;e.stock.rope=4;e.stock.boards=28;}
@@ -66,7 +72,7 @@ export function challengeProgress(config:GardenConfig,state:GardenState){
   const stock={...state.inventory,...state.economy?.stock};
   const goals=Object.entries(c.target).map(([resource,target])=>({id:resource,value:stock[resource as keyof typeof stock]??0,target:target!}));
   if(c.relics)goals.push({id:'relics',value:state.maze?.collected??0,target:c.relics});
-  if(c.returnHome)goals.push({id:'home',value:state.x===0&&state.y===0?1:0,target:1});
+  if(c.returnHome)goals.push({id:'home',value:(state.fleet?state.fleet.drones.every(d=>d.x===0&&d.y===0):state.x===0&&state.y===0)?1:0,target:1});
   return {goals,passed:goals.length>0&&goals.every(g=>g.value>=g.target)};
 }
 export function evaluateChallenge(run:GardenRun){

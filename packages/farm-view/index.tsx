@@ -9,7 +9,7 @@ export function FarmView({state,size,event,compact=false,trail=[]}:{state:State;
     const app=new Application();let dead=false;let observer:ResizeObserver;let target={x:0,y:0};
     const board=new Container(),actor=new Container();let first=true;
     app.init({backgroundAlpha:0,antialias:true,resolution:Math.min(devicePixelRatio,2),autoDensity:true,preference:'webgl'}).then(()=>{
-      if(dead){app.destroy(true,{children:true});return;}host.current!.appendChild(app.canvas);app.stage.addChild(board,actor);
+      if(dead){app.destroy({removeView:true,releaseGlobalResources:false},{children:true});return;}host.current!.appendChild(app.canvas);app.stage.addChild(board,actor);
       actor.addChild(new Graphics().ellipse(0,9,16,7).fill({color:0x12392c,alpha:.22}).roundRect(-14,-14,28,23,8).fill(0xf5f3dd).stroke({width:2,color:0x1d513d}).circle(-7,-18,7).fill(0x2b644c).circle(7,-18,7).fill(0x2b644c).roundRect(-10,-10,20,11,4).fill(0x174b38).circle(-4,-5,2).fill(0xcafa8b).circle(4,-5,2).fill(0xcafa8b));
       const paint=()=>{
         if(dead||!host.current)return;
@@ -38,7 +38,7 @@ export function FarmView({state,size,event,compact=false,trail=[]}:{state:State;
       paintRef.current=paint;observer=new ResizeObserver(paint);observer.observe(host.current!);paint();
       app.ticker.add(t=>{actor.x+=(target.x-actor.x)*Math.min(1,t.deltaTime*.24);actor.y+=(target.y-actor.y)*Math.min(1,t.deltaTime*.24);});
     }).catch(error=>{if(host.current)host.current.textContent='画布初始化失败：'+String(error);});
-    return()=>{dead=true;observer?.disconnect();paintRef.current=()=>{};if(app.renderer)app.destroy(true,{children:true});};
+    return()=>{dead=true;observer?.disconnect();paintRef.current=()=>{};if(app.renderer)app.destroy({removeView:true,releaseGlobalResources:false},{children:true});};
   },[]);
   useEffect(()=>paintRef.current(),[state,size,event,trail]);
   return <div className={'farm-canvas'+(compact?' compact':'')} ref={host}/>;

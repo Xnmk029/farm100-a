@@ -23,7 +23,7 @@ export async function gardenEconomyQA(win:BrowserWindow,dir:string){
   win.webContents.send('gardenPlayback',{tick:first.result.state.tick,speed:24,cinema:false,playing:false});await settle();
   await click('研究');await click('投入研究');const research=await waitRun(2);await settle();
   if(research.result.reason!=='finished'||research.result.state.inventory.grain!==0||!research.result.state.economy.unlocks.includes('carrot'))throw Error('Research UI did not consume real grain');
-  if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 1/20')&&document.querySelector('.stage-badge').textContent.includes('暂停')`))throw Error('Direct action displayed stale state');
+  if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 1/23')&&document.querySelector('.stage-badge').textContent.includes('暂停')`))throw Error('Direct action displayed stale state');
   await shot('first-research-complete');checks.push('beginner program through utility bridge','research consumes grain','direct action final state is paused');
   await click('程序');await new Promise(r=>setTimeout(r,1200));await shot('preserved-editor');if(!await js(`document.querySelector('.garden-sidebar').textContent.includes('第一课')`))throw Error('Direct action replaced editor');checks.push('editor preserved');
   // Only substitute file selection in this explicit QA mode; the shipped IPC,
@@ -37,7 +37,7 @@ export async function gardenEconomyQA(win:BrowserWindow,dir:string){
     const saved=JSON.parse(await readFile(savePath,'utf8'));
     if(saved.version!==GARDEN_VERSION||saved.state.economy.unlocks[0]!=='carrot'||!saved.source.includes('第一课'))throw Error('Saved content incomplete');
     await click('新农场');await settle();await click('打开农场');await settle();
-    if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 1/20')&&document.querySelector('.garden-status').textContent.includes('农场已恢复')`))throw Error('Saved farm did not reopen');
+    if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 1/23')&&document.querySelector('.garden-status').textContent.includes('农场已恢复')`))throw Error('Saved farm did not reopen');
     checks.push('save and reopen through shipped handlers');
   }finally{dialog.showSaveDialog=saveDialog;dialog.showOpenDialog=openDialog;}
   const dimensions=await js(`({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,overflow:document.documentElement.scrollWidth>innerWidth})`);

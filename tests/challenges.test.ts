@@ -46,3 +46,12 @@ test('combined tasks expose downstream material and scheduling effects of strate
   const repair=await pair('schedule-3');const [serial,batch]=repair.map(r=>evaluateChallenge(r)!);assert.ok(serial.passed&&batch.passed);assert.deepEqual(serial.spent,batch.spent);assert.equal(serial.produced.parts,batch.produced.parts);assert.ok(repair[0].events.find(e=>e.action==='craft')!.tick>repair[1].events.find(e=>e.action==='craft')!.tick,'batch repairs bring assembly forward');
   const harvest=await pair('sort-3');const [dry,wet]=harvest.map(r=>evaluateChallenge(r)!);assert.ok(dry.passed&&wet.passed);assert.equal(wet.spent.water,4);assert.equal(dry.spent.water??0,0);assert.equal(dry.produced.pumpkins,wet.produced.pumpkins);assert.ok(wet.tick<dry.tick,'early irrigation changes the shared harvest window');
 });
+
+test('v0.4 challenge recordings keep their frozen rules after fleet migration',async()=>{
+  const config={...challengeConfig('maze-3',17),rule:'garden-v0.4.0' as const};
+  const r=await executeGarden({runId:randomUUID(),config,source:challengeSource('maze-3')});
+  assert.equal(r.version,'garden-v0.4.0');assert.equal(r.result.reason,'finished');assert.equal(r.result.state.maze!.collected,3);
+  validateGardenRun(JSON.parse(JSON.stringify(r)));
+  assert.throws(()=>new Garden({...config,drones:2}),/多机需要/);
+  const old=new Garden({...gardenDefault,rule:'garden-v0.4.0'});assert.throws(()=>old.act('research',['fleet2']),/未知研究/);
+});

@@ -1,6 +1,9 @@
 import {z} from 'zod';
+import {validateFleetTrace} from '../fleet/scheduler';
 import {canonical,directions} from '../protocol';
 import * as Legacy from './legacy-v02';
+import * as V04 from './legacy-v04';
+import {copyFleet,createFleet,fleetCapacity,type FleetState,type FleetAPI} from '../fleet/protocol';
 import * as V03 from './legacy-v03';
 import {CHALLENGE_RULE,CHALLENGE_BY_ID,setupChallenge,copyMaze,mazeDirections,type Maze} from './challenges';
 import {CROP_CONTENT,TECH_BY_ID,RECIPE_BY_ID,QUESTS,RESOURCE_NAMES,type Costs,type Resource} from './content';
@@ -11,41 +14,48 @@ export const CROPS=CROP_CONTENT;
 export type Crop=keyof typeof CROPS;
 export type Cell={soil:boolean;crop:Crop|null;growth:number;water:number;cycles:number;fertility?:number;lastCrop?:Crop|null;trait?:number;damaged?:boolean;repaired?:boolean};
 export type Economy={stock:Record<string,number>;unlocks:string[];quests:string[];counters:Record<string,number>;extent:number};
-export type GardenState=Omit<Legacy.GardenState,'cells'> & {cells:Cell[];economy?:Economy;maze?:Maze};
-export const GardenConfigSchema=Legacy.GardenConfigSchema.extend({rule:z.enum([GARDEN_VERSION,'garden-v0.3.0']).optional(),challenge:z.string().max(60).optional()});
+export type GardenState=Omit<Legacy.GardenState,'cells'> & {cells:Cell[];economy?:Economy;maze?:Maze;fleet?:FleetState};
+export const GardenConfigSchema=Legacy.GardenConfigSchema.extend({rule:z.enum([GARDEN_VERSION,'garden-v0.4.0','garden-v0.3.0']).optional(),challenge:z.string().max(60).optional(),drones:z.union([z.literal(1),z.literal(2),z.literal(4),z.literal(8)]).optional()});
 export type GardenConfig=z.infer<typeof GardenConfigSchema>;
 export const gardenDefault:GardenConfig={rule:GARDEN_VERSION,size:8,seed:42,budget:100000};
 export const legacyGardenDefault:GardenConfig={size:6,seed:42,budget:30000};
 export const ACTIONS=[...Legacy.ACTIONS,'get_inventory','get_progress','research','craft','fertilize','water_area','till_area','inspect_neighbors','swap','repair','expand','harvest_area','clear','sense','collect'] as const;
-export type GardenAction=typeof ACTIONS[number];
-export type GardenEvent=Omit<Legacy.GardenEvent,'action'|'changes'> & {action:GardenAction;changes:[number,Cell][];economy?:Economy;maze?:Maze};
-export type GardenOutcome=Legacy.GardenOutcome;
+export type GardenAction=typeof ACTIONS[number]|FleetAPI|'worker_done'|'fleet_abort';
+export type GardenEvent=Omit<Legacy.GardenEvent,'action'|'changes'> & {action:GardenAction;changes:[number,Cell][];economy?:Economy;maze?:Maze;fleet?:FleetState;actor?:number;kind?:'dispatch'|'complete'|'finish'|'abort'};
+export type GardenOutcome=Legacy.GardenOutcome|'deadlock'|'instruction_limit';
 export type GardenRequest={runId:string;config:GardenConfig;source:string;initial?:GardenState};
-export type GardenRun={format:'farm100-garden';version:typeof GARDEN_VERSION|'garden-v0.3.0'|'garden-v0.2.0';runId:string;source:string;config:GardenConfig;initial:GardenState;events:GardenEvent[];snapshots:{seq:number;state:GardenState}[];result:{reason:GardenOutcome;message:string;state:GardenState};logs:string[];complete:boolean};
+export type GardenRun={format:'farm100-garden';version:typeof GARDEN_VERSION|'garden-v0.4.0'|'garden-v0.3.0'|'garden-v0.2.0';runId:string;source:string;config:GardenConfig;initial:GardenState;events:GardenEvent[];snapshots:{seq:number;state:GardenState}[];result:{reason:GardenOutcome;message:string;state:GardenState};logs:string[];complete:boolean};
 export const copyEconomy=(e:Economy):Economy=>({...e,stock:{...e.stock},unlocks:[...e.unlocks],quests:[...e.quests],counters:{...e.counters}});
-export const copyGarden=(s:GardenState):GardenState=>({...s,cells:s.cells.map(c=>({...c})),inventory:{...s.inventory},...(s.economy?{economy:copyEconomy(s.economy)}:{}),...(s.maze?{maze:copyMaze(s.maze)}:{})});
+export const copyGarden=(s:GardenState):GardenState=>({...s,cells:s.cells.map(c=>({...c})),inventory:{...s.inventory},...(s.economy?{economy:copyEconomy(s.economy)}:{}),...(s.maze?{maze:copyMaze(s.maze)}:{}),...(s.fleet?{fleet:copyFleet(s.fleet)}:{})});
 export const stageOf=(c:Cell)=>c.crop===null?-1:Math.min(3,Math.floor(c.growth/CROPS[c.crop].growth*3));
 export const ready=(c:Cell)=>!!c.crop&&!c.damaged&&c.growth>=CROPS[c.crop].growth;
 export const stockOf=(s:GardenState):Record<Resource,number>=>Object.fromEntries(Object.keys(RESOURCE_NAMES).map(k=>[k,Object.hasOwn(s.inventory,k)?s.inventory[k as keyof typeof s.inventory]:s.economy?.stock[k]??0])) as Record<Resource,number>;
 export const canAfford=(s:GardenState,cost:Costs,amount=1)=>Object.entries(cost).every(([k,v])=>stockOf(s)[k as Resource]>=v!*amount);
 export function freshGarden(c:GardenConfig):GardenState{
   validateChallengeConfig(c);
+  if(c.rule==='garden-v0.4.0')return V04.freshGarden({...c,rule:c.rule});
   const s=Legacy.freshGarden({size:c.size,seed:c.seed,budget:c.budget}) as GardenState;
   if(c.rule)s.economy={stock:Object.fromEntries(Object.keys(RESOURCE_NAMES).filter(k=>!Object.hasOwn(s.inventory,k)).map(k=>[k,0])),unlocks:[],quests:[],counters:{},extent:Math.min(4,c.size)};
   if(c.challenge)setupChallenge(s,CHALLENGE_BY_ID[c.challenge]);
+  if(c.drones)s.fleet=createFleet(s,c.drones);
   return s;
 }
-function validateChallengeConfig(c:GardenConfig){if(c.challenge){const def=CHALLENGE_BY_ID[c.challenge];if(c.rule!==GARDEN_VERSION||!def||c.size!==def.size||c.budget!==def.budget)throw Error('挑战必须使用固定规则、尺寸和预算');}}
+function validateChallengeConfig(c:GardenConfig){if(c.drones&&c.rule!==GARDEN_VERSION)throw Error('多机需要 0.5 规则');if(c.rule==='garden-v0.4.0')return;if(c.challenge){const def=CHALLENGE_BY_ID[c.challenge];if(c.rule!==GARDEN_VERSION||!def||c.size!==def.size||c.budget!==def.budget)throw Error('挑战必须使用固定规则、尺寸和预算');}}
 const CropSchema=z.enum(['wheat','carrot','tree','sunflower','pumpkin','cactus','bean','crystal']);
 const CellSchema=z.object({soil:z.boolean(),crop:CropSchema.nullable(),growth:z.number().int().min(0).max(280),water:z.number().int().min(0).max(400),cycles:z.number().int().min(0),fertility:z.number().int().min(0).max(1).optional(),lastCrop:CropSchema.nullable().optional(),trait:z.number().int().min(0).max(9).optional(),damaged:z.boolean().optional(),repaired:z.boolean().optional()}).strict();
 const MazeSchema=z.object({walls:z.array(z.number().int().min(0).max(15)).max(1024),gates:z.array(z.number().int().min(0).max(15)).max(1024),seen:z.array(z.boolean()).max(1024),loot:z.array(z.enum(['key','relic']).nullable()).max(1024),keys:z.number().int().min(0).max(1),collected:z.number().int().min(0).max(3),required:z.number().int().min(1).max(3)}).strict();
+const SharedSchema=z.union([z.number().finite(),z.string().max(1024),z.boolean(),z.null()]);
+const FleetSchema=z.object({drones:z.array(z.object({id:z.number().int().min(0).max(7),x:z.number().int().min(0).max(31),y:z.number().int().min(0).max(31),facing:z.enum(['North','South','East','West']),cost:z.number().int().min(0),actions:z.number().int().min(0),status:z.enum(['idle','waiting','done'])}).strict()).min(1).max(8),pending:z.array(z.object({actor:z.number().int().min(0).max(7),action:z.string().max(50),args:z.array(z.unknown()).max(3),start:z.number().int().min(0),end:z.number().int().min(0).nullable(),cost:z.number().int().min(1)}).strict()).max(8),shared:z.record(z.string().max(64),SharedSchema)}).strict();
 const countMap=z.record(z.string().max(100),z.number().int().min(0));
-const StateSchema=z.object({size:z.number().int().min(4).max(32),seed:z.number().int().min(0).max(0xffffffff),tick:z.number().int().min(0),cost:z.number().int().min(0),x:z.number().int().min(0),y:z.number().int().min(0),facing:z.enum(['North','South','East','West']),cells:z.array(CellSchema).max(1024),inventory:z.object({grain:z.number().int().min(0),roots:z.number().int().min(0),water:z.number().int().min(0)}).strict(),harvests:z.number().int().min(0),planted:z.number().int().min(0),economy:z.object({stock:countMap,unlocks:z.array(z.string()).max(20),quests:z.array(z.string()).max(12),counters:countMap,extent:z.number().int().min(4).max(32)}).strict(),maze:MazeSchema.optional()}).strict();
+const StateSchema=z.object({size:z.number().int().min(4).max(32),seed:z.number().int().min(0).max(0xffffffff),tick:z.number().int().min(0),cost:z.number().int().min(0),x:z.number().int().min(0),y:z.number().int().min(0),facing:z.enum(['North','South','East','West']),cells:z.array(CellSchema).max(1024),inventory:z.object({grain:z.number().int().min(0),roots:z.number().int().min(0),water:z.number().int().min(0)}).strict(),harvests:z.number().int().min(0),planted:z.number().int().min(0),economy:z.object({stock:countMap,unlocks:z.array(z.string()).max(23),quests:z.array(z.string()).max(12),counters:countMap,extent:z.number().int().min(4).max(32)}).strict(),maze:MazeSchema.optional(),fleet:FleetSchema.optional()}).strict();
 export function validateGardenState(raw:unknown,c:GardenConfig):GardenState{
   validateChallengeConfig(c);
   if(!c.rule)return Legacy.validateGardenState(raw,c);
+  if(c.rule==='garden-v0.4.0')return V04.validateGardenState(raw,{...c,rule:c.rule});
   if(c.rule==='garden-v0.3.0')return V03.validateGardenState(raw,{...c,rule:c.rule});
   const s=StateSchema.parse(raw),e=s.economy;
+  if(c.drones){s.fleet??=createFleet(s,c.drones);if(c.drones>fleetCapacity(e.unlocks,c.challenge)||s.fleet!.drones.length!==c.drones||s.fleet!.drones.some((d,i)=>d.id!==i||d.x>=e.extent||d.y>=e.extent)||Object.keys(s.fleet!.shared).length>128)throw Error('无人机数量、位置或共享状态无效');}
+  else if(s.fleet)throw Error('无人机状态与配置不一致');
   if(s.maze){if(!c.challenge||CHALLENGE_BY_ID[c.challenge].fixture!=='maze'||[s.maze.walls,s.maze.gates,s.maze.seen,s.maze.loot].some(a=>a.length!==s.size*s.size)||s.maze.collected+s.maze.loot.filter(l=>l==='relic').length!==s.maze.required)throw Error('迷宫状态无效');}
   else if(c.challenge&&CHALLENGE_BY_ID[c.challenge].fixture==='maze')throw Error('缺少迷宫状态');
   if(s.size!==c.size||s.seed!==c.seed||s.cells.length!==s.size*s.size||e.extent>s.size||s.x>=e.extent||s.y>=e.extent)throw Error('农场存档范围不一致');
@@ -56,12 +66,16 @@ export function validateGardenState(raw:unknown,c:GardenConfig):GardenState{
   return s;
 }
 export class Garden {
-  state:GardenState;initial:GardenState;events:GardenEvent[]=[];terminal:GardenStop|undefined;private legacy:Legacy.Garden|V03.Garden|undefined;
+  state:GardenState;initial:GardenState;events:GardenEvent[]=[];terminal:GardenStop|undefined;private legacy:Legacy.Garden|V03.Garden|V04.Garden|undefined;
   constructor(public config:GardenConfig,initial?:GardenState){
     this.config=GardenConfigSchema.parse(config);validateChallengeConfig(this.config);
     if(!config.rule){this.legacy=new Legacy.Garden(config,initial as Legacy.GardenState|undefined);this.initial=this.legacy.initial;this.state=this.legacy.state;this.events=this.legacy.events;}
+    else if(config.rule==='garden-v0.4.0'){this.legacy=new V04.Garden({...config,rule:config.rule},initial);this.initial=this.legacy.initial;this.state=this.legacy.state;this.events=this.legacy.events;}
     else if(config.rule==='garden-v0.3.0'){this.legacy=new V03.Garden({...config,rule:config.rule},initial);this.initial=this.legacy.initial;this.state=this.legacy.state;this.events=this.legacy.events;}
-    else{if(config.challenge&&initial&&canonical(initial)!==canonical(freshGarden(config)))throw Error('挑战每次从固定初始世界开始，不能继承或修改存档');this.initial=initial?validateGardenState(initial,config):freshGarden(config);this.state=copyGarden(this.initial);}
+    else{if(config.challenge&&initial&&canonical(initial)!==canonical(freshGarden(config)))throw Error('挑战每次从固定初始世界开始，不能继承或修改存档');this.initial=validateGardenState(initial??freshGarden(config),config);
+      // A new execution starts new VM stacks, on both the host and worker.
+      if(this.initial.fleet){if(this.initial.fleet.pending.length)throw Error('请先取消未完成动作后重新调度');this.initial.fleet.drones.forEach(d=>d.status='idle');}
+      this.state=copyGarden(this.initial);}
   }
   private neighbors(index:number){const s=this.state,x=index%s.size,y=Math.floor(index/s.size),n=s.economy!.extent;return Object.values(directions).map(([dx,dy])=>[x+dx,y+dy]).filter(([x,y])=>x>=0&&y>=0&&x<n&&y<n).map(([x,y])=>y*s.size+x);}
   private add(resource:Resource,amount:number){const s=this.state;if(Object.hasOwn(s.inventory,resource))s.inventory[resource as keyof typeof s.inventory]+=amount;else s.economy!.stock[resource]=(s.economy!.stock[resource]??0)+amount;}
@@ -92,11 +106,10 @@ export class Garden {
     }
     if(group.length>1)this.count('group_harvest',group.length);return total;
   }
-  act(action:GardenAction,args:unknown[]):unknown{
-    if(this.legacy){try{return this.legacy.act(action as Legacy.GardenAction,args);}finally{this.state=this.legacy.state;}}
+  describe(action:GardenAction,args:unknown[]){
     if(this.terminal)throw this.terminal;
     const fail=(m:string):never=>{this.terminal=new GardenStop('api_error',m);throw this.terminal;};
-    if(!ACTIONS.includes(action))fail('未知 API');
+    if(!ACTIONS.includes(action as typeof ACTIONS[number]))fail('未知 API');
     if(this.config.challenge&&!CHALLENGE_BY_ID[this.config.challenge].allowed.includes(action))fail('本挑战未开放该 API');
     if(!['plant','move','swap','wait','research','craft'].includes(action)&&args.length!==0)fail(`${action} 不接受参数`);
     if((action==='move'||action==='swap')&&(args.length!==1||typeof args[0]!=='string'||!Object.hasOwn(directions,args[0])))fail('方向必须为 North / South / East / West');
@@ -107,9 +120,10 @@ export class Garden {
     const amount=action==='craft'?(args[1] as number??1):1;
     const duration=action==='wait'?args[0] as number:action==='craft'?RECIPE_BY_ID[args[0] as string].ticks*amount:({move:4,till:8,plant:6,water:4,harvest:6,refill:12,collect:6,clear:8,research:12,fertilize:6,water_area:12,till_area:20,swap:6,repair:16,expand:50,harvest_area:16} as Partial<Record<GardenAction,number>>)[action]??1;
     const cost=action==='wait'?duration:action==='craft'?amount:action.endsWith('_area')?6:action==='swap'?3:1;
-    if(this.state.cost-this.initial.cost+cost>this.config.budget){this.terminal=new GardenStop('budget_exceeded','操作预算不足，动作未执行');throw this.terminal;}
-    const s=this.state,e=s.economy!,before=s.cells.map(c=>({...c})),fromTick=s.tick,index=s.y*s.size+s.x,cell=s.cells[index];let value:unknown=true;
-    const has=(id:string)=>e.unlocks.includes(id);
+    return {duration,cost,amount};
+  }
+  advance(duration:number){
+    const s=this.state;
     for(let t=0;t<duration;t++){
       s.tick++;
       for(let i=0;i<s.cells.length;i++){
@@ -125,6 +139,14 @@ export class Garden {
         if(c.water>0)c.water--;
       }
     }
+  }
+  act(action:GardenAction,args:unknown[],scheduledAt?:number):unknown{
+    if(this.legacy){try{return this.legacy.act(action as Legacy.GardenAction,args);}finally{this.state=this.legacy.state;}}
+    const {duration,cost,amount}=this.describe(action,args);
+    if(this.state.cost-this.initial.cost+cost>this.config.budget){this.terminal=new GardenStop('budget_exceeded','操作预算不足，动作未执行');throw this.terminal;}
+    const s=this.state,e=s.economy!,before=s.cells.map(c=>({...c})),fromTick=scheduledAt??s.tick,index=s.y*s.size+s.x,cell=s.cells[index];let value:unknown=true;
+    const has=(id:string)=>e.unlocks.includes(id);
+    if(scheduledAt===undefined)this.advance(duration);
     s.cost+=cost;
     const area:number[]=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=s.x+dx,y=s.y+dy;if(x>=0&&y>=0&&x<e.extent&&y<e.extent)area.push(y*s.size+x);}
     const inspect=(i:number)=>{const c=s.cells[i];return {crop:c.crop,stage:stageOf(c),ready:ready(c),growth:c.growth,water:c.water,soil:c.soil,trait:c.trait??0,fertility:c.fertility??0,damaged:c.damaged??false};};
@@ -166,21 +188,21 @@ export class Garden {
     if(value!==false)this.count(action);
     for(const q of QUESTS)if(!e.quests.includes(q.id)&&(e.counters[q.counter]??0)>=q.target)e.quests.push(q.id);
     const changes:[number,Cell][]=[];s.cells.forEach((c,i)=>{if(canonical(c)!==canonical(before[i]))changes.push([i,{...c}]);});
-    this.events.push({seq:this.events.length+1,action,args:[...args],value,fromTick,tick:s.tick,cost:s.cost,x:s.x,y:s.y,facing:s.facing,changes,inventory:{...s.inventory},harvests:s.harvests,planted:s.planted,economy:copyEconomy(e),...(s.maze?{maze:copyMaze(s.maze)}:{})});return value;
+    this.events.push({seq:this.events.length+1,action,args:[...args],value,fromTick,tick:s.tick,cost:s.cost,x:s.x,y:s.y,facing:s.facing,changes,inventory:{...s.inventory},harvests:s.harvests,planted:s.planted,economy:copyEconomy(e),...(s.maze?{maze:copyMaze(s.maze)}:{}),...(s.fleet?{fleet:copyFleet(s.fleet)}:{})});return value;
   }
 }
-export function applyGardenEvent(state:GardenState,event:GardenEvent):GardenState{const s=copyGarden(state);Object.assign(s,{tick:event.tick,cost:event.cost,x:event.x,y:event.y,facing:event.facing,inventory:{...event.inventory},harvests:event.harvests,planted:event.planted});for(const [i,c]of event.changes)s.cells[i]={...c};if(event.economy)s.economy=copyEconomy(event.economy);if(event.maze)s.maze=copyMaze(event.maze);return s;}
-export function gardenRun(req:GardenRequest,sim:Garden,reason:GardenOutcome,message:string,logs:string[]=[],complete=true):GardenRun{
+export function applyGardenEvent(state:GardenState,event:GardenEvent):GardenState{const s=copyGarden(state);Object.assign(s,{tick:event.tick,cost:event.cost,x:event.x,y:event.y,facing:event.facing,inventory:{...event.inventory},harvests:event.harvests,planted:event.planted});for(const [i,c]of event.changes)s.cells[i]={...c};if(event.economy)s.economy=copyEconomy(event.economy);if(event.maze)s.maze=copyMaze(event.maze);if(event.fleet)s.fleet=copyFleet(event.fleet);return s;}
+export function gardenRun(req:GardenRequest,sim:Pick<Garden,'initial'|'state'|'events'>,reason:GardenOutcome,message:string,logs:string[]=[],complete=true):GardenRun{
   const snapshots=[{seq:0,state:copyGarden(sim.initial)}];let state=sim.initial;for(const event of sim.events){state=applyGardenEvent(state,event);if(event.seq%128===0)snapshots.push({seq:event.seq,state});}
   return {format:'farm100-garden',version:req.config.rule??'garden-v0.2.0',runId:req.runId,source:req.source,config:req.config,initial:copyGarden(sim.initial),events:sim.events,snapshots,result:{reason,message,state:copyGarden(sim.state)},logs,complete};
 }
 export function gardenAt(run:GardenRun,seq:number):GardenState{const n=Math.max(0,Math.min(run.events.length,Math.floor(seq)));let snap=run.snapshots[0];for(const s of run.snapshots){if(s.seq>n)break;snap=s;}let state=snap.state;for(let i=snap.seq;i<n;i++)state=applyGardenEvent(state,run.events[i]);return state;}
 export function gardenSequence(run:GardenRun,tick:number){let lo=0,hi=run.events.length;while(lo<hi){const m=(lo+hi)>>1;if(run.events[m].tick<=tick)lo=m+1;else hi=m;}return lo;}
 export function validateGardenRun(raw:unknown):GardenRun{
-  const r=raw as GardenRun;if(r?.version==='garden-v0.2.0')return Legacy.validateGardenRun(raw);if(r?.version==='garden-v0.3.0')return V03.validateGardenRun(raw);
+  const r=raw as GardenRun;if(r?.version==='garden-v0.2.0')return Legacy.validateGardenRun(raw);if(r?.version==='garden-v0.3.0')return V03.validateGardenRun(raw);if(r?.version==='garden-v0.4.0')return V04.validateGardenRun(raw);
   if(!r||r.format!=='farm100-garden'||r.version!==GARDEN_VERSION||typeof r.source!=='string'||r.source.length>1048576||!Array.isArray(r.events)||r.events.length>50000||!Array.isArray(r.snapshots))throw Error('不支持的农场运行记录');
-  z.object({runId:z.string().uuid(),logs:z.array(z.string().max(4096)).max(65536),complete:z.boolean(),result:z.object({reason:z.enum(['finished','budget_exceeded','api_error','runtime_error','memory_limit','wall_timeout','cancelled','recording_limit','runner_crash']),message:z.string().max(4000)})}).parse(r);
-  const config=GardenConfigSchema.parse(r.config);if(config.rule!==GARDEN_VERSION)throw Error('运行与规则版本不一致');const sim=new Garden(config,r.initial);
-  for(const event of r.events){if(!event||!ACTIONS.includes(event.action)||!Array.isArray(event.args))throw Error('事件格式错误');sim.act(event.action,event.args);if(canonical(sim.events.at(-1))!==canonical(event))throw Error(`事件 ${event.seq} 与引擎不一致`);}
+  z.object({runId:z.string().uuid(),logs:z.array(z.string().max(4096)).max(65536),complete:z.boolean(),result:z.object({reason:z.enum(['finished','budget_exceeded','api_error','runtime_error','memory_limit','wall_timeout','cancelled','recording_limit','runner_crash','deadlock','instruction_limit']),message:z.string().max(4000)})}).parse(r);
+  const config=GardenConfigSchema.parse(r.config);if(config.rule!==GARDEN_VERSION)throw Error('运行与规则版本不一致');if(config.drones)return validateFleetTrace(r);const sim=new Garden(config,r.initial);
+  for(const event of r.events){if(!event||!ACTIONS.includes(event.action as typeof ACTIONS[number])||!Array.isArray(event.args))throw Error('事件格式错误');sim.act(event.action,event.args);if(canonical(sim.events.at(-1))!==canonical(event))throw Error(`事件 ${event.seq} 与引擎不一致`);}
   if(canonical(sim.state)!==canonical(r.result?.state))throw Error('终态不一致');const rebuilt=gardenRun({runId:r.runId,config,source:r.source},sim,r.result.reason,r.result.message,r.logs,r.complete);if(canonical(rebuilt.snapshots)!==canonical(r.snapshots))throw Error('快照不一致');return rebuilt;
 }

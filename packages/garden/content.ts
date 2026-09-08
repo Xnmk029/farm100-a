@@ -34,6 +34,9 @@ export const TECH:Tech[]=[
   {id:'crystals',name:'矿晶培育',branch:'农艺',requires:['canning','pumpkins'],cost:{preserves:4,pumpkins:8,compost:4},description:'解锁矿晶花与 repair，维护裂隙作物。'},
   {id:'workshop',name:'精密工坊',branch:'制造',requires:['crystals'],cost:{crystal:6,boards:8,oil:4},description:'将木板、植物油和矿晶组装为零件。'},
   {id:'expansion',name:'农场扩建',branch:'物流',requires:['fiberwork','canning'],cost:{boards:12,rope:6,preserves:4},description:'解锁 expand，逐步开放更多土地。'},
+  {id:'fleet2',name:'双机协同',branch:'物流',requires:['fiberwork'],cost:{boards:4,rope:2},description:'解锁同时部署两台无人机，各自执行程序并共享仓库。'},
+  {id:'fleet4',name:'四机调度',branch:'物流',requires:['fleet2','workshop'],cost:{parts:4,rope:4},description:'解锁四机任务队列、并行生产与协作。'},
+  {id:'fleet8',name:'八机编组',branch:'物流',requires:['fleet4','expansion'],cost:{parts:8,preserves:8,rope:8},description:'解锁八机规模的资源争用与综合调度。'},
   {id:'harvester',name:'区域收获',branch:'物流',requires:['workshop','expansion'],cost:{parts:6,rope:4,oil:4},description:'解锁 harvest_area，消耗植物油收获附近成熟作物。'},
 ];
 export const TECH_BY_ID=Object.fromEntries(TECH.map(t=>[t.id,t])) as Record<string,Tech>;

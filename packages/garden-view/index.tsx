@@ -2,12 +2,13 @@ import {useEffect,useRef} from 'react';
 import {Application,Assets,Container,Graphics,Sprite,Texture,Text} from 'pixi.js';
 import 'pixi.js/unsafe-eval';
 import {stageOf,ready,type GardenState,type GardenEvent} from '../garden/core';
+import {DRONE_COLORS} from '../fleet/protocol';
 
 const SIN=10/Math.sqrt(228),ANCHOR=.5+.7*Math.sqrt(128)/Math.sqrt(228)/6;
 const names=[...['grass','soil','wet','path'].flatMap(k=>[0,1].map(v=>`tile-${k}-${v}`)),...['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal'].flatMap(k=>[0,1,2,3].map(s=>`${k}-${s}`)),...['barn','tank','crate','fence','pine','rock','composter','workbench','oilpress','loom','pantry','workshop','hedge','gate','relic','key-stone'],...Array.from({length:8},(_,i)=>`drone-${i}`)];
 let textures:Promise<Record<string,Texture>>|undefined;
 function load(){Assets.setPreferences({preferWorkers:false,preferCreateImageBitmap:false});return textures??=Promise.all(names.map(async n=>[n,await Assets.load<Texture>(`${import.meta.env.BASE_URL}assets/farm-v1/${n}.png`)] as const)).then(Object.fromEntries).catch(e=>{textures=undefined;throw e;});}
-type Props={state:GardenState;event?:GardenEvent;nextEvent?:GardenEvent;clock:number;cinematicClock?:number;follow:boolean;grid:boolean;selected:number;onSelect:(index:number)=>void;resetKey:number;onReady?:()=>void};
+type Props={state:GardenState;event?:GardenEvent;nextEvent?:GardenEvent;events?:GardenEvent[];clock:number;cinematicClock?:number;follow:boolean;grid:boolean;selected:number;onSelect:(index:number)=>void;resetKey:number;onReady?:()=>void};
 
 export function GardenView(props:Props){
   const host=useRef<HTMLDivElement>(null),latest=useRef(props),update=useRef<()=>void>(()=>{});latest.current=props;
@@ -15,7 +16,7 @@ export function GardenView(props:Props){
     const app=new Application();let dead=false,resize:ResizeObserver|undefined;
     let wheel:((e:WheelEvent)=>void)|undefined,down:((e:PointerEvent)=>void)|undefined,move:((e:PointerEvent)=>void)|undefined,up:((e:PointerEvent)=>void)|undefined;
     Promise.all([app.init({backgroundAlpha:0,antialias:true,resolution:Math.min(devicePixelRatio,2),autoDensity:true,preference:'webgl'}),load()]).then(([,atlas])=>{
-      if(dead){app.destroy(true,{children:true});return;}
+      if(dead){app.destroy({removeView:true,releaseGlobalResources:false},{children:true});return;}
       const element=host.current!;element.appendChild(app.canvas);
       const world=new Container(),ground=new Container(),objects=new Container(),fx=new Container();objects.sortableChildren=true;
       world.addChild(ground,objects,fx);app.stage.addChild(world);
@@ -76,11 +77,15 @@ export function GardenView(props:Props){
       const conditions=new Graphics();fx.addChild(conditions);
       const traits=Array.from({length:size*size},(_,i)=>{const text=new Text({text:'',style:{fontFamily:'Consolas',fontSize:16,fill:0xffedb3,stroke:{color:0x243a27,width:3}}});text.anchor.set(.5,1);const p=point(i%size,Math.floor(i/size));text.position.set(p.x,p.y-28);fx.addChild(text);return text;});
       const marker=new Graphics();fx.addChild(marker);
-      const droneShadow=new Graphics().ellipse(0,0,21,9).fill({color:0x14291c,alpha:.23});fx.addChild(droneShadow);
-      const drone=new Container(),body=sprite('drone-0',0,0,drone);body.position.set(0,0);objects.addChild(drone);
-      const rotors=new Graphics();drone.addChild(rotors);
-      let target=point(latest.current.state.x,latest.current.state.y),lastSeq=-1,elapsed=0,lastReset=latest.current.resetKey;
-      drone.position.set(target.x,target.y-23);
+      const drones=Array.from({length:latest.current.state.fleet?.drones.length??1},(_,id)=>{
+        const shadow=new Graphics().ellipse(0,0,21,9).fill({color:0x14291c,alpha:.23});fx.addChild(shadow);
+        const node=new Container(),body=sprite('drone-0',0,0,node);body.position.set(0,0);objects.addChild(node);
+        const color=DRONE_COLORS[id],rotors=new Graphics(),badge=new Graphics().roundRect(-12,-53,24,17,6).fill(color);
+        const label=new Text({text:String(id+1),style:{fontFamily:'Consolas',fontSize:12,fontWeight:'bold',fill:0x152a24}});label.anchor.set(.5);label.position.set(0,-45);
+        badge.visible=label.visible=!!latest.current.state.fleet;node.addChild(rotors,badge,label);body.tint=latest.current.state.fleet?color:0xffffff;
+        return {node,body,rotors,shadow,badge,label,target:point(latest.current.state.x,latest.current.state.y),next:undefined as GardenEvent|undefined};
+      });
+      let lastSeq=0,lastClock=latest.current.clock,elapsed=0,lastReset=latest.current.resetKey;
       const particles:{s:Graphics;vx:number;vy:number;life:number;max:number;spin:number}[]=[];
       let zoom=1,pan={x:0,y:0},fit=1,drag:{x:number;y:number;px:number;py:number}|null=null,dragged=false;
       const layout=()=>{
@@ -89,7 +94,7 @@ export function GardenView(props:Props){
         world.scale.set(fit*zoom);world.position.set(element.clientWidth/2+pan.x,element.clientHeight*.53+pan.y);
       };
       const emit=(e:GardenEvent)=>{
-        if(e.value===false)return;
+        if(e.value===false||e.kind&&e.kind!=='complete')return;
         const action=e.action.replace('_area',''),harvesting=action==='harvest';
         const positions=harvesting?e.changes.filter(([,c])=>c.crop===null).map(([i])=>point(i%size,Math.floor(i/size))):e.action.endsWith('_area')?e.changes.filter(([i])=>Math.abs(i%size-e.x)<=1&&Math.abs(Math.floor(i/size)-e.y)<=1).map(([i])=>point(i%size,Math.floor(i/size))):[point(e.x,e.y)];
         const color=action==='collect'?0x7cdef2:action==='water'?0x79d8eb:harvesting?0xf4d36c:action==='plant'?0x9dc961:action==='repair'?0xc9a8ec:0xb99a68;
@@ -136,14 +141,26 @@ export function GardenView(props:Props){
         const diamond=(x:number,y:number,color:number,alpha:number,width:number)=>{const p=point(x,y);selection.moveTo(p.x,p.y-TH/2).lineTo(p.x+TW/2,p.y).lineTo(p.x,p.y+TH/2).lineTo(p.x-TW/2,p.y).closePath().stroke({color,alpha,width});};
         if(grid)for(let y=0;y<size;y++)for(let x=0;x<size;x++)diamond(x,y,0xe6edc9,.22,1);
         if(selected>=0)diamond(selected%size,Math.floor(selected/size),0xf2df9b,.85,2);
-        target=point(state.x,state.y);body.texture=atlas[`drone-${({South:0,East:2,North:4,West:6} as Record<string,number>)[state.facing]??0}`];
-        if(event&&event.seq!==lastSeq){
-          const continuous=lastSeq>=0&&event.seq===lastSeq+1;
-          if(continuous)emit(event);else{particles.forEach(p=>{fx.removeChild(p.s);p.s.destroy();});particles.length=0;drone.position.set(target.x,target.y-23);}
-          lastSeq=event.seq;
-          const p=point(event.x,event.y);marker.clear().ellipse(p.x,p.y,TW*.3,TH*.22).stroke({color:event.value===false?0xf08162:event.action==='water'?0x92dcea:0xf2db8a,width:2,alpha:.8});
+        for(let i=0;i<drones.length;i++){
+          const d=state.fleet?.drones[i]??state,v=drones[i];v.target=point(d.x,d.y);
+          v.body.texture=atlas[`drone-${({South:0,East:2,North:4,West:6} as Record<string,number>)[d.facing]??0}`];
+          v.next=state.fleet?undefined:latest.current.nextEvent;
         }
-        if(!event){lastSeq=-1;marker.clear();drone.position.set(target.x,target.y-23);}
+        if(state.fleet&&latest.current.events){
+          const pending=new Set(state.fleet.pending.map(p=>p.actor));
+          for(let i=event?.seq??0;i<latest.current.events.length&&pending.size;i++){
+            const e=latest.current.events[i];if(e.kind==='complete'&&pending.has(e.actor!)){drones[e.actor!].next=e;pending.delete(e.actor!);}
+          }
+        }
+        if(event&&event.seq!==lastSeq){
+          const continuous=event.seq>lastSeq&&event.seq-lastSeq<=128&&latest.current.clock>=lastClock&&latest.current.clock-lastClock<=30;
+          if(continuous){for(const e of latest.current.events?.slice(lastSeq,event.seq)??[event])emit(e);}
+          else{particles.forEach(p=>{fx.removeChild(p.s);p.s.destroy();});particles.length=0;}
+          lastSeq=event.seq;
+          const actor=state.fleet?.drones[event.actor!]??event,p=point(actor.x,actor.y);marker.clear().ellipse(p.x,p.y,TW*.3,TH*.22).stroke({color:event.value===false?0xf08162:event.action==='water'?0x92dcea:0xf2db8a,width:2,alpha:.8});
+        }
+        if(!event){lastSeq=0;marker.clear();}
+        lastClock=latest.current.clock;
       };
       update.current=paint;layout();paint();resize=new ResizeObserver(layout);resize.observe(element);
       wheel=e=>{e.preventDefault();zoom=Math.max(.65,Math.min(2.5,zoom*Math.exp(-e.deltaY*.001)));layout();};
@@ -165,30 +182,40 @@ export function GardenView(props:Props){
           const p=plants[i];p.time=Math.min(1,p.time+dt*3);p.image.alpha=p.time;p.image.rotation=Math.sin(elapsed*1.3+i*1.9)*.009;
           p.ghost.alpha=1-p.time;p.ghost.visible=p.old>0&&p.time<1;p.ghost.y=p.key?0:-p.time*18;
         }
-        const next=latest.current.nextEvent;
+        const next=drones.find(d=>d.next?.action==='craft')?.next??latest.current.nextEvent;
         processing.clear();
         const facility=facilities.find(f=>next?.action==='craft'&&next.value!==false&&next.args[0]===f.recipe);
         if(facility){const p=point(facility.x,facility.y),u=Math.max(0,Math.min(1,(latest.current.clock-next!.fromTick)/(next!.tick-next!.fromTick)));processing.ellipse(p.x,p.y,37,15).stroke({color:0xeed487,width:2,alpha:.6});processing.rect(p.x-24,p.y-55,48,4).fill(0x30412c).rect(p.x-24,p.y-55,48*u,4).fill(0xf0d889);}
 
         for(let i=0;i<plants.length;i++){const pos=point(i%size,Math.floor(i/size));plants[i].node.position.set(pos.x,pos.y);}
-        if(next?.action==='swap'&&next.value===true){
-          const a=latest.current.state.y*size+latest.current.state.x,dir=next.args[0],b=a+(dir==='East'?1:dir==='West'?-1:dir==='South'?size:-size);
+        for(const v of drones){const next=v.next;if(next?.action==='swap'&&next.value===true){
+          const actor=latest.current.state.fleet?.drones[next.actor!]??latest.current.state;
+          const a=actor.y*size+actor.x,dir=next.args[0],b=a+(dir==='East'?1:dir==='West'?-1:dir==='South'?size:-size);
           if(plants[a]&&plants[b]){const p=point(a%size,Math.floor(a/size)),q=point(b%size,Math.floor(b/size)),f=Math.max(0,Math.min(1,(latest.current.clock-next.fromTick)/(next.tick-next.fromTick))),u=f*f*(3-2*f),arc=Math.sin(f*Math.PI)*18;plants[a].node.position.set(p.x+(q.x-p.x)*u,p.y+(q.y-p.y)*u-arc);plants[b].node.position.set(q.x+(p.x-q.x)*u,q.y+(p.y-q.y)*u+arc);}
-        }
+        }}
+        for(let id=0;id<drones.length;id++){
+        const {node:drone,body,shadow:droneShadow,rotors,badge,label,target,next}=drones[id];
         let position=target;
         if(next?.action==='move'&&next.value===true){const end=point(next.x,next.y),f=Math.max(0,Math.min(1,(latest.current.clock-next.fromTick)/(next.tick-next.fromTick))),u=f*f*(3-2*f);position={x:target.x+(end.x-target.x)*u,y:target.y+(end.y-target.y)*u};body.texture=atlas[`drone-${({South:0,East:2,North:4,West:6} as Record<string,number>)[next.facing]??0}`];}
-        drone.position.set(position.x,position.y-23+Math.sin(elapsed*3)*2);
-        drone.zIndex=(latest.current.state.x+latest.current.state.y)*100+80;
+        const actor=latest.current.state.fleet?.drones[id]??latest.current.state;
+        const peers=latest.current.state.fleet?.drones.filter(d=>d.x===actor.x&&d.y===actor.y)??[];
+        const rank=peers.findIndex(d=>d.id===id),offset=peers.length>1?(rank-(peers.length-1)/2)*12:0;
+        badge.x=label.x=offset;
+        drone.position.set(position.x+offset,position.y-23-Math.abs(offset)*.18+Math.sin(elapsed*3+id)*2);
+        drone.zIndex=(actor.x+actor.y)*100+80+id;
         droneShadow.position.set(drone.x,drone.y+25);
         rotors.clear();for(const [x,y]of [[-24,-8],[23,-8],[-3,-22],[0,8]])rotors.ellipse(x,y,9+Math.sin(elapsed*70)*2,2).fill({color:0xe8efd8,alpha:.22});
+        const pending=latest.current.state.fleet?.pending.find(p=>p.actor===id);
+        if(pending){const u=pending.end===null?.5:Math.max(0,Math.min(1,(latest.current.clock-pending.start)/(pending.end-pending.start)));rotors.roundRect(-17,15,34,3,1).fill(0x294b3b).roundRect(-17,15,Math.max(1,34*u),3,1).fill(DRONE_COLORS[id]);}
+        }
         marker.alpha=.4+Math.sin(elapsed*4)*.15;
         for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life+=dt;p.s.x+=p.vx*dt;p.s.y+=p.vy*dt;p.vy+=55*dt;p.s.alpha=Math.max(0,1-p.life/p.max);p.s.rotation+=dt*p.spin;if(p.life>=p.max){fx.removeChild(p.s);p.s.destroy();particles.splice(i,1);}}
-        if(latest.current.follow){pan.x+=(-drone.x*fit*zoom-pan.x)*dt*2;pan.y+=(-drone.y*fit*zoom-pan.y)*dt*2;world.position.set(element.clientWidth/2+pan.x,element.clientHeight*.53+pan.y);}
+        if(latest.current.follow){const drone=drones[0].node;pan.x+=(-drone.x*fit*zoom-pan.x)*dt*2;pan.y+=(-drone.y*fit*zoom-pan.y)*dt*2;world.position.set(element.clientWidth/2+pan.x,element.clientHeight*.53+pan.y);}
       });
       app.render();element.dataset.ready='true';latest.current.onReady?.();
     }).catch(e=>{if(host.current){host.current.dataset.error=String(e);host.current.textContent='农场资产加载失败：'+String(e);}});
-    return()=>{dead=true;resize?.disconnect();const el=host.current;if(el){if(wheel)el.removeEventListener('wheel',wheel);if(down)el.removeEventListener('pointerdown',down);if(move)el.removeEventListener('pointermove',move);if(up)el.removeEventListener('pointerup',up);}update.current=()=>{};if(app.renderer)app.destroy(true,{children:true});};
-  },[props.state.size,!!props.state.maze,props.state.seed]);
+    return()=>{dead=true;resize?.disconnect();const el=host.current;if(el){if(wheel)el.removeEventListener('wheel',wheel);if(down)el.removeEventListener('pointerdown',down);if(move)el.removeEventListener('pointermove',move);if(up)el.removeEventListener('pointerup',up);}update.current=()=>{};if(app.renderer)app.destroy({removeView:true,releaseGlobalResources:false},{children:true});};
+  },[props.state.size,!!props.state.maze,props.state.seed,props.state.fleet?.drones.length]);
   useEffect(()=>update.current(),[props.state,props.event,props.selected,props.grid,props.resetKey]);
-  return <div className="garden-canvas" ref={host} data-playback-clock={props.clock} aria-label="可拖动缩放的农场画布"/>;
+  return <div className="garden-canvas" ref={host} data-drone-count={props.state.fleet?.drones.length??1} data-playback-clock={props.clock} aria-label="可拖动缩放的农场画布"/>;
 }
