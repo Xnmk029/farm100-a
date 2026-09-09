@@ -18,7 +18,9 @@ export function GardenView(props:Props){
     Promise.all([app.init({backgroundAlpha:0,antialias:true,resolution:Math.min(devicePixelRatio,2),autoDensity:true,preference:'webgl'}),load()]).then(([,atlas])=>{
       if(dead){app.destroy({removeView:true,releaseGlobalResources:false},{children:true});return;}
       const element=host.current!;element.appendChild(app.canvas);
-      const world=new Container(),ground=new Container(),objects=new Container(),fx=new Container();objects.sortableChildren=true;
+      // Rotor/progress geometry changes each frame. Keep their instruction rebuilds
+      // out of the large ground and depth-sorted crop layers.
+      const world=new Container(),ground=new Container({isRenderGroup:true}),objects=new Container({isRenderGroup:true}),fx=new Container({isRenderGroup:true});objects.sortableChildren=true;
       world.addChild(ground,objects,fx);app.stage.addChild(world);
       const TW=96,TH=TW*SIN,ratio=TW*6/Math.sqrt(8),size=latest.current.state.size;
       const point=(x:number,y:number)=>({x:(x-y)*TW/2,y:(x+y-size+1)*TH/2});
@@ -79,7 +81,7 @@ export function GardenView(props:Props){
       const marker=new Graphics();fx.addChild(marker);
       const drones=Array.from({length:latest.current.state.fleet?.drones.length??1},(_,id)=>{
         const shadow=new Graphics().ellipse(0,0,21,9).fill({color:0x14291c,alpha:.23});fx.addChild(shadow);
-        const node=new Container(),body=sprite('drone-0',0,0,node);body.position.set(0,0);objects.addChild(node);
+        const node=new Container({isRenderGroup:true}),body=sprite('drone-0',0,0,node);body.position.set(0,0);objects.addChild(node);
         const color=DRONE_COLORS[id],rotors=new Graphics(),badge=new Graphics().roundRect(-12,-53,24,17,6).fill(color);
         const label=new Text({text:String(id+1),style:{fontFamily:'Consolas',fontSize:12,fontWeight:'bold',fill:0x152a24}});label.anchor.set(.5);label.position.set(0,-45);
         badge.visible=label.visible=!!latest.current.state.fleet;node.addChild(rotors,badge,label);body.tint=latest.current.state.fleet?color:0xffffff;
@@ -176,24 +178,26 @@ export function GardenView(props:Props){
       };
       element.addEventListener('wheel',wheel,{passive:false});element.addEventListener('pointerdown',down);element.addEventListener('pointermove',move);element.addEventListener('pointerup',up);
       let previousCinematic:number|undefined;
+      const displaced=new Set<number>();
       app.ticker.add(t=>{
         const filmClock=latest.current.cinematicClock;
         const dt=filmClock===undefined?Math.min(.05,t.deltaMS/1000):previousCinematic===undefined?0:Math.max(0,Math.min(.1,filmClock-previousCinematic));
         previousCinematic=filmClock;elapsed=filmClock??elapsed+dt;
         for(let i=0;i<plants.length;i++){
-          const p=plants[i];p.time=Math.min(1,p.time+dt*3);p.image.alpha=p.time;p.image.rotation=Math.sin(elapsed*1.3+i*1.9)*.009;
-          p.ghost.alpha=1-p.time;p.ghost.visible=p.old>0&&p.time<1;p.ghost.y=p.key?0:-p.time*18;
+          const p=plants[i];
+          if(p.time<1){p.time=Math.min(1,p.time+dt*3);p.image.alpha=p.time;p.ghost.alpha=1-p.time;p.ghost.visible=p.old>0&&p.time<1;p.ghost.y=p.key?0:-p.time*18;}
+          if(p.key)p.image.rotation=Math.sin(elapsed*1.3+i*1.9)*.009;
         }
         const next=drones.find(d=>d.next?.action==='craft')?.next??latest.current.nextEvent;
         processing.clear();
         const facility=facilities.find(f=>next?.action==='craft'&&next.value!==false&&next.args[0]===f.recipe);
         if(facility){const p=point(facility.x,facility.y),u=Math.max(0,Math.min(1,(latest.current.clock-next!.fromTick)/(next!.tick-next!.fromTick)));processing.ellipse(p.x,p.y,37,15).stroke({color:0xeed487,width:2,alpha:.6});processing.rect(p.x-24,p.y-55,48,4).fill(0x30412c).rect(p.x-24,p.y-55,48*u,4).fill(0xf0d889);}
 
-        for(let i=0;i<plants.length;i++){const pos=point(i%size,Math.floor(i/size));plants[i].node.position.set(pos.x,pos.y);}
+        for(const i of displaced){const pos=point(i%size,Math.floor(i/size));plants[i].node.position.set(pos.x,pos.y);}displaced.clear();
         for(const v of drones){const next=v.next;if(next?.action==='swap'&&next.value===true){
           const actor=latest.current.state.fleet?.drones[next.actor!]??latest.current.state;
           const a=actor.y*size+actor.x,dir=next.args[0],b=a+(dir==='East'?1:dir==='West'?-1:dir==='South'?size:-size);
-          if(plants[a]&&plants[b]){const p=point(a%size,Math.floor(a/size)),q=point(b%size,Math.floor(b/size)),f=Math.max(0,Math.min(1,(latest.current.clock-next.fromTick)/(next.tick-next.fromTick))),u=f*f*(3-2*f),arc=Math.sin(f*Math.PI)*18;plants[a].node.position.set(p.x+(q.x-p.x)*u,p.y+(q.y-p.y)*u-arc);plants[b].node.position.set(q.x+(p.x-q.x)*u,q.y+(p.y-q.y)*u+arc);}
+          if(plants[a]&&plants[b]){displaced.add(a);displaced.add(b);const p=point(a%size,Math.floor(a/size)),q=point(b%size,Math.floor(b/size)),f=Math.max(0,Math.min(1,(latest.current.clock-next.fromTick)/(next.tick-next.fromTick))),u=f*f*(3-2*f),arc=Math.sin(f*Math.PI)*18;plants[a].node.position.set(p.x+(q.x-p.x)*u,p.y+(q.y-p.y)*u-arc);plants[b].node.position.set(q.x+(p.x-q.x)*u,q.y+(p.y-q.y)*u+arc);}
         }}
         for(let id=0;id<drones.length;id++){
         const {node:drone,body,shadow:droneShadow,rotors,badge,label,target,next}=drones[id];

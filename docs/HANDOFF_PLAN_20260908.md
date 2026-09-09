@@ -140,3 +140,9 @@
 当前候选包 release/large-farm-0.5.3-final/win-unpacked/FARM100.exe 已构建，包内 dist 和生产示例与当前构建一致。scripts/large-farm-release-qa.mjs 已开始运行，输出 artifacts/large-farm/release-20260910/release-qa.json；依次进行兼容性回归、120 秒校准、校准通过后的 1800 秒完整测量。不要重复启动同一测试或改变测试期间的包；先读取该 JSON、各子报告和活动进程确认状态。脚本返回 pass 之前，不声明本阶段性能完成。
 
 后续先核验长测结果、内存曲线与压缩档案完整导出重开，再更新发行报告与阶段文档；若校准或长测失败则保存原始证据并修复。实时观看时间条当前仍沿用普通回放的终态标签，后续视听/界面打磨时应明确显示已记录上界。
+
+### 渲染校准跟进
+
+上述 release-20260910 流程已结束：同包兼容性全部通过，但校准 p95 27.8 ms 失败，因此没有启动长测。CPU 采样定位到 Pixi 场景遍历和重打包；拆分渲染组并减少重复植物更新后，calibration-groups 的 120 秒 p95 为 16.8 ms，全部非时长检查通过。新版本 0.5.3-alpha.2，候选目录 release/large-farm-0.5.3-r2；新驱动输出使用 artifacts/large-farm/release-r2-20260910，保留所有先前失败证据。
+
+新增可选 FARM100_PERF_PROFILE=1 渲染线程采样与实际 WebGL 后端记录；带分析器的运行只做定位。新增 large-farm-archive-qa.ts，长测后执行完整压缩档案及两组各 100 次乱序跳转检查。先看父流程 release-qa.json 和存活进程再继续，不能因尚无终态报告而重复启动。总体目标仍 active。

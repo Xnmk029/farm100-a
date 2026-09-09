@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-const exe=path.resolve(process.argv[2]??'release/large-farm-0.5.3-final/win-unpacked/FARM100.exe');
+const exe=path.resolve(process.argv[2]??'release/large-farm-0.5.3-r2/win-unpacked/FARM100.exe');
 const out=path.resolve(process.argv[3]??`artifacts/large-farm/release-${Date.now()}`);
 const input=path.resolve(process.argv[4]??'artifacts/large-farm/preparation-v2/earned.garden.json');
 await mkdir(out,{recursive:true});
@@ -34,7 +34,10 @@ try{
     else assert.equal(result.pass,true,'30 minute performance acceptance');
     report.runs.at(-1).proof={pass:seconds===1800?result.pass:true,p95Ms:result.p95Ms,cancelMs:result.cancelMs,events:result.events,checks:result.checks};await save();
   }
+  await run('archive',process.execPath,['node_modules/tsx/dist/cli.mjs','scripts/large-farm-archive-qa.ts',path.join(out,'performance-30m'),path.join(out,'archive')]);
+  const archived=JSON.parse(await readFile(path.join(out,'archive/archive-qa.json'),'utf8'));assert.equal(archived.pass,true,'Complete production archive and seeks');
   for(const file of files)assert.equal(await sha(file.path),file.sha256,'Package changed during acceptance');
+  assert.equal(await sha(input),report.inputSHA256,'Input changed during acceptance');
   report.pass=true;
 }catch(error){report.error=String(error);process.exitCode=1;}
 report.completedAt=new Date().toISOString();await save();

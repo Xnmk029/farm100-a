@@ -29,6 +29,9 @@ export async function performanceQA(win:BrowserWindow,root:string,dir:string){
   win.unmaximize();win.setFullScreen(false);win.setMaximizable(false);win.setMinimizable(false);win.setFullScreenable(false);win.setResizable(false);win.setContentSize(1920,1080);
   const display=screen.getDisplayMatching(win.getBounds());win.setPosition(display.workArea.x+Math.max(0,display.workArea.width-win.getBounds().width),display.workArea.y);
   win.setAlwaysOnTop(true,'floating');win.showInactive();await sleep(1500);
+  const profiling=process.env.FARM100_PERF_PROFILE==='1';
+  await writeFile(path.join(dir,'render-backend.json'),JSON.stringify({features:app.getGPUFeatureStatus(),gpu:await app.getGPUInfo('basic'),webgl:await js(`(()=>{const c=document.querySelector('.garden-canvas canvas'),g=c?.getContext('webgl2')??c?.getContext('webgl');if(!g)return null;const e=g.getExtension('WEBGL_debug_renderer_info');return {vendor:g.getParameter(g.VENDOR),renderer:g.getParameter(g.RENDERER),unmasked:e?g.getParameter(e.UNMASKED_RENDERER_WEBGL):null};})()`)},null,2));
+  if(profiling){win.webContents.debugger.attach('1.3');await win.webContents.debugger.sendCommand('Profiler.enable');await win.webContents.debugger.sendCommand('Profiler.start');}
   await js(`(()=>{
     const e=document.querySelector('[aria-label="执行时实时观看"]');if(!e.checked)e.click();
     const p=window.__farmPerformance={frames:0,histogram:Array(2001).fill(0),maxFrame:0,last:0,started:0,events:0,diskBytes:0,contention:0,actions:{},planted:{},failed:0,result:null,running:true};
@@ -46,6 +49,7 @@ export async function performanceQA(win:BrowserWindow,root:string,dir:string){
     if(samples.length===1||samples.length%60===0)await writeFile(path.join(dir,`production-${Math.floor(sample.elapsedMs/1000)}s.png`),(await win.webContents.capturePage()).toPNG());
   }
   const timing=await js(`(()=>{const p=window.__farmPerformance;p.running=false;return {frames:p.frames,histogram:p.histogram,maxFrame:p.maxFrame,elapsedMs:p.last-p.started};})()`);
+  if(profiling){const {profile}=await win.webContents.debugger.sendCommand('Profiler.stop');win.webContents.debugger.detach();await writeFile(path.join(dir,'renderer.cpuprofile'),JSON.stringify(profile));}
   await writeFile(path.join(dir,'production-end.png'),(await win.webContents.capturePage()).toPNG());
   const cancelStart=performance.now();await click('中止');await wait(`!!window.__farmPerformance.result`);const cancelMs=performance.now()-cancelStart;
   const receipt=await js('window.__farmPerformance.result');assert.equal(receipt.result.reason,'cancelled');
