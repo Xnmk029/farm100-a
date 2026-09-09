@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,writeFile,unlink} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,unlink,readdir} from 'node:fs/promises';
+import {gzipSync,gunzipSync} from 'node:zlib';
 import os from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
@@ -11,6 +12,35 @@ import {gardenDefault,gardenAt,gardenSequence,validateGardenRun} from '../packag
 import {challengeConfig} from '../packages/garden/challenges';
 import {challengeSource} from '../packages/garden/challenge-examples';
 const root=()=>mkdtemp(path.join(os.tmpdir(),'farm100-journal-test-'));
+test('large journals compress losslessly, export portably, and reject oversized decompression',async()=>{
+  const dir=await root(),req={runId:randomUUID(),config:{...gardenDefault,size:32 as const},source:'for(let i=0;i<200;i++)wait(1);'};
+  const journal=await GardenJournal.create(dir,req),history=new GardenHistory(dir);
+  const receipt=await executeGarden(req,{stream:true,onBatch:e=>journal.append(e)});await journal.finish(receipt);
+  const files=await readdir(path.join(journal.dir,'chunks'));assert.ok(files.every(f=>f.endsWith('.json.gz')));
+  const first=await readFile(path.join(journal.dir,'chunks',files.sort()[0]));assert.ok(first.length<gunzipSync(first).length/4);
+  assert.deepEqual((await history.openPaged(req.runId)).receipt.result.state,receipt.result.state);
+  assert.deepEqual((await history.window(req.runId,{seq:200})).state,receipt.result.state);
+  const file=path.join(dir,'compressed.farmjournal');await history.exportPaged(req.runId,file);
+  const imported=await history.importPaged(file);assert.deepEqual(imported.receipt.result.state,receipt.result.state);
+  assert.equal(imported.receipt.eventCount,200);
+  const lines=(await readFile(file,'utf8')).trim().split('\n');assert.equal(JSON.parse(lines[0]).format,'farm100-journal-export-v2');
+  lines[1]=JSON.stringify({chunkGzip:gzipSync(Buffer.alloc(16*1024*1024+1,32)).toString('base64')});
+  const hostile=path.join(dir,'oversized.farmjournal');await writeFile(hostile,lines.join('\n')+'\n');
+  await assert.rejects(()=>history.importPaged(hostile));assert.equal((await history.list()).total,2);
+});
+test('a sealed live journal can be viewed without repeating full validation and detects changed chunks',async()=>{
+  const dir=await root(),req={runId:randomUUID(),config:gardenDefault,source:'for(let i=0;i<160;i++)wait(1);'};
+  const journal=await GardenJournal.create(dir,req),history=new GardenHistory(dir);
+  const receipt=await executeGarden(req,{stream:true,onBatch:events=>journal.append(events)});
+  assert.throws(()=>history.adopt(journal,receipt),/尚未完成/);
+  await journal.finish(receipt);
+  assert.throws(()=>new GardenHistory(dir+'/other').adopt(journal,receipt),/目录/);
+  history.adopt(journal,receipt);
+  assert.deepEqual((await history.window(req.runId,{seq:160})).state,receipt.result.state);
+  const file=path.join(journal.dir,'chunks','00000000.json');
+  const chunk=JSON.parse(await readFile(file,'utf8'));chunk.events[0].value=999;await writeFile(file,JSON.stringify(chunk));
+  await assert.rejects(()=>history.window(req.runId,{seq:1}),/片段已改变/);
+});
 test('durable batches reopen with full deterministic state and indexed seeks',async()=>{
   for(const config of [gardenDefault,challengeConfig('fleet-repair',7,8),{...gardenDefault,rule:'garden-v0.4.0' as const}]){
     const dir=await root(),req={runId:randomUUID(),config,source:config.challenge?challengeSource(config.challenge):'for(let i=0;i<200;i++)wait(1);'},j=await GardenJournal.create(dir,req);

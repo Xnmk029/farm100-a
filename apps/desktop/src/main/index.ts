@@ -14,6 +14,7 @@ import {gardenEconomyQA} from './garden-qa';
 import {challengeUIQA} from './challenge-qa';
 import {fleetUIQA} from './fleet-qa';
 import {crashHistoryQA,historyUIQA,historyUtilityQA} from './history-qa';
+import {performanceQA} from './performance-qa';
 import {streamUtilityQA,streamUIQA} from './stream-qa';
 import {GardenJournal,GardenHistory} from '../../../../packages/garden-storage/journal';
 import type {GardenReceipt} from '../../../../packages/garden/stream';
@@ -23,6 +24,7 @@ import {challengeConfig} from '../../../../packages/garden/challenges';
 import {challengeSource} from '../../../../packages/garden/challenge-examples';
 import {GardenConfigSchema,gardenDefault,validateGardenState,validateGardenRun,GARDEN_VERSION,type GardenRun,type GardenRequest} from '../../../../packages/garden/core';
 
+const performanceRun=process.argv.includes('--qa-performance');
 const qa=process.argv.includes('--qa-utility');
 const renderQA=process.argv.includes('--qa-render');
 const gardenQA=process.argv.includes('--qa-garden');
@@ -107,8 +109,8 @@ app.whenReady().then(async()=>{
       renderRuns.push(await launchRun(req,worker,()=>{}).promise);
     }
   }
-  win=new BrowserWindow({width:1440,height:940,minWidth:1050,minHeight:700,show:!renderQA,backgroundColor:'#101813',title:'FARM100 · 算法农场',autoHideMenuBar:true,
-    webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:!renderQA,offscreen:renderQA}});
+  win=new BrowserWindow({width:1440,height:940,minWidth:1050,minHeight:700,show:!renderQA||performanceRun,backgroundColor:'#101813',title:'FARM100 · 算法农场',autoHideMenuBar:true,
+    webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:!renderQA,offscreen:renderQA&&!performanceRun}});
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   if(renderQA)win.webContents.on('console-message',(_event,level,message)=>console.log('RENDER',level,message));
   win.webContents.on('will-navigate',(event)=>event.preventDefault());
@@ -120,14 +122,16 @@ app.whenReady().then(async()=>{
   secureHandler('gardenStart',async(arg)=>{
     if(gardenActive||active||gardenStarting)throw Error('已有程序执行中');
     const config=GardenConfigSchema.parse(arg.config);
+    const watch=z.boolean().optional().parse(arg.watch)??false;
     if(typeof arg.source!=='string'||Buffer.byteLength(arg.source)>1048576)throw Error('代码超出限制');
     const req:GardenRequest={runId:randomUUID(),config,source:arg.source,initial:arg.initial?validateGardenState(arg.initial,config):undefined};
+    let journal:GardenJournal;
     gardenStarting=true;gardenStartCancelled=false;
-    try{const journal=await GardenJournal.create(history().root,req),progress=(p:any)=>{if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',p);};gardenActive=config.rule===GARDEN_VERSION&&!config.challenge?launchGarden(req,gardenWorker,progress,{journal,stream:true}):launchGarden(req,gardenWorker,progress,{journal});gardenActiveId=req.runId;if(gardenStartCancelled)gardenActive.cancel();}finally{gardenStarting=false;}
+    try{journal=await GardenJournal.create(history().root,req);const progress=(p:any)=>{if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',p);};gardenActive=config.rule===GARDEN_VERSION&&!config.challenge?launchGarden(req,gardenWorker,progress,{journal,stream:true,watchRate:watch?24:undefined}):launchGarden(req,gardenWorker,progress,{journal});gardenActiveId=req.runId;if(gardenStartCancelled)gardenActive.cancel();}finally{gardenStarting=false;}
     const current=gardenActive;
     current.promise.then(async(run)=>{
       if(gardenActive===current){gardenActive=undefined;gardenActiveId=undefined;}
-      let warning='';if(run.format==='farm100-garden-receipt'){try{const opened=await history().openPaged(run.runId);run=opened.receipt;warning=opened.warning;}catch(e){warning=String(e);}}
+      let warning='';if(run.format==='farm100-garden-receipt'){try{const opened=history().adopt(journal!,run);run=opened.receipt;warning=opened.warning;}catch(e){warning=String(e);}}
       if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',{type:'result',runId:req.runId,run,historyWarning:warning});
     });return req.runId;
   });
@@ -226,6 +230,7 @@ app.whenReady().then(async()=>{
     if(gardenQA&&process.argv.includes('--qa-fleet-ui'))await fleetUIQA(win,dir);
     if(gardenQA&&historyQA)await historyUIQA(win,history().root,dir);
     if(gardenQA&&process.argv.includes('--qa-stream-ui'))await streamUIQA(win,history().root,dir);
+    if(performanceRun)await performanceQA(win,history().root,dir);
     app.exit(0);return;
   }
   win.on('closed',()=>{active?.cancel();gardenActive?.cancel();win=undefined;});
