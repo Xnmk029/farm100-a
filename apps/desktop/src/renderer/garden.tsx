@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef,useState,type ComponentType} from 'react';
 import {LiveGardenWindow} from '../../../../packages/garden/live';
+import {LessonWorkspace} from './lessons';
 import {Garden} from '../../../../packages/garden/core';
 import {GardenView} from '../../../../packages/garden-view';
 import {FarmAudio} from '../../../../packages/garden-view/audio';
@@ -29,6 +30,7 @@ export function GardenWorkspace({Editor,onSort}:{Editor:Editor;onSort:()=>void})
   const [config,setConfig]=useState<GardenConfig>(gardenDefault),[base,setBase]=useState(()=>freshGarden(gardenDefault));
   const [code,setCode]=useState(''),[example,setExample]=useState(''),[run,setRun]=useState<GardenReplay|null>(null);
   const [newSize,setNewSize]=useState<8|16|32>(8),[watch,setWatch]=useState(false);
+  const [learning,setLearning]=useState(false);
   const live=useRef<LiveGardenWindow|null>(null),liveWatch=useRef(false);
   const [,setLiveRevision]=useState(0);
   const [busy,setBusy]=useState(false),[phase,setPhase]=useState('准备播种'),[error,setError]=useState('');
@@ -120,9 +122,10 @@ export function GardenWorkspace({Editor,onSort}:{Editor:Editor;onSort:()=>void})
     else{setRun(null);setConfig(data.config!);setBase(data.state!);setCode(data.source!);setTick(data.state!.tick);setPhase('农场已恢复');}
   };
   useEffect(()=>{const handler=(e:KeyboardEvent)=>{if(e.key==='Escape')setCinema(false);if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();document.getElementById('garden-execute')?.click();}};window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler);},[]);
+  if(learning)return <LessonWorkspace Editor={Editor} onExit={()=>setLearning(false)}/>;
   return <div className={'garden-shell'+(cinema?' cinema':'')} data-live={busy&&!!live.current} data-live-events={live.current?.count??0} data-live-buffer={live.current?.events.length??0} data-farm-size={config.size} data-farm-extent={state.economy?.extent??config.size} data-replay-format={run?.format??'world'} data-replay-id={run?.runId??''} data-replay-seq={seq} data-window-events={playback.events.length} data-replay-loading={playback.loading}>
     <header className="garden-header"><div className="garden-brand"><span className="garden-mark">F</span><div>FARM<span>100</span><small>把想法，种成一座农场</small></div></div>
-      <nav><span className="current">{challenge?'编程挑战':'自由农场'}</span>{challenge?<button disabled={busy} onClick={returnToFarm}>返回农场</button>:<button disabled={busy} onClick={()=>setTab('challenges')}>编程挑战</button>}<button disabled={busy} onClick={onSort}>算法测评 ↗</button></nav>
+      <nav><span className="current">{challenge?'编程挑战':'自由农场'}</span><button disabled={busy} onClick={()=>{setPlaying(false);setLearning(true);}}>学写程序</button>{challenge?<button disabled={busy} onClick={returnToFarm}>返回农场</button>:<button disabled={busy} onClick={()=>setTab('challenges')}>编程挑战</button>}<button disabled={busy} onClick={onSort}>算法测评 ↗</button></nav>
       <div className="garden-header-right"><span className="local-dot"/> 本地农场 <span className="version">0.5 开发中</span></div>
     </header>
     <div className="garden-toolbar"><div><span className="eyebrow">HOME FIELD</span><strong>{challenge?.name??'晨光农庄'}</strong><span>{state.economy?.extent??config.size} × {state.economy?.extent??config.size} · {challenge?'种子 '+config.seed:'研究 '+(state.economy?.unlocks.length??0)+'/'+techCount}</span></div>

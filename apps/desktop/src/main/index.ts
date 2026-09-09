@@ -15,6 +15,8 @@ import {challengeUIQA} from './challenge-qa';
 import {fleetUIQA} from './fleet-qa';
 import {crashHistoryQA,historyUIQA,historyUtilityQA} from './history-qa';
 import {performanceQA} from './performance-qa';
+import {lessonUIQA} from './lesson-qa';
+import {lessonWorld,gradeLesson} from '../../../../packages/garden/lessons';
 import {streamUtilityQA,streamUIQA} from './stream-qa';
 import {GardenJournal,GardenHistory} from '../../../../packages/garden-storage/journal';
 import type {GardenReceipt} from '../../../../packages/garden/stream';
@@ -121,18 +123,19 @@ app.whenReady().then(async()=>{
   secureHandler('gardenFrameReady',(frame)=>{if(pendingFrame&&pendingFrame.id===frame){pendingFrame.resolve();pendingFrame=undefined;}return true;});
   secureHandler('gardenStart',async(arg)=>{
     if(gardenActive||active||gardenStarting)throw Error('已有程序执行中');
-    const config=GardenConfigSchema.parse(arg.config);
+    const lesson=z.string().max(32).optional().parse(arg.lesson),fixture=lesson===undefined?undefined:lessonWorld(lesson);
+    const config=fixture?.config??GardenConfigSchema.parse(arg.config);
     const watch=z.boolean().optional().parse(arg.watch)??false;
     if(typeof arg.source!=='string'||Buffer.byteLength(arg.source)>1048576)throw Error('代码超出限制');
-    const req:GardenRequest={runId:randomUUID(),config,source:arg.source,initial:arg.initial?validateGardenState(arg.initial,config):undefined};
+    const req:GardenRequest={runId:randomUUID(),config,source:arg.source,initial:fixture?.initial??(arg.initial?validateGardenState(arg.initial,config):undefined)};
     let journal:GardenJournal;
     gardenStarting=true;gardenStartCancelled=false;
-    try{journal=await GardenJournal.create(history().root,req);const progress=(p:any)=>{if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',p);};gardenActive=config.rule===GARDEN_VERSION&&!config.challenge?launchGarden(req,gardenWorker,progress,{journal,stream:true,watchRate:watch?24:undefined}):launchGarden(req,gardenWorker,progress,{journal});gardenActiveId=req.runId;if(gardenStartCancelled)gardenActive.cancel();}finally{gardenStarting=false;}
+    try{journal=await GardenJournal.create(history().root,req);const progress=(p:any)=>{if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',p);};gardenActive=config.rule===GARDEN_VERSION&&!config.challenge&&!lesson?launchGarden(req,gardenWorker,progress,{journal,stream:true,watchRate:watch?24:undefined}):launchGarden(req,gardenWorker,progress,{journal});gardenActiveId=req.runId;if(gardenStartCancelled)gardenActive.cancel();}finally{gardenStarting=false;}
     const current=gardenActive;
     current.promise.then(async(run)=>{
       if(gardenActive===current){gardenActive=undefined;gardenActiveId=undefined;}
       let warning='';if(run.format==='farm100-garden-receipt'){try{const opened=history().adopt(journal!,run);run=opened.receipt;warning=opened.warning;}catch(e){warning=String(e);}}
-      if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',{type:'result',runId:req.runId,run,historyWarning:warning});
+      if(win&&!win.isDestroyed())win.webContents.send('gardenProgress',{type:'result',runId:req.runId,run,historyWarning:warning,...(lesson&&run.format==='farm100-garden'?{lessonFeedback:gradeLesson(lesson,run)}:{})});
     });return req.runId;
   });
   secureHandler('gardenCancel',()=>{if(gardenStarting)gardenStartCancelled=true;gardenActive?.cancel();return true;});
@@ -228,6 +231,7 @@ app.whenReady().then(async()=>{
     if(gardenQA&&process.argv.includes('--qa-economy-ui'))await gardenEconomyQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-challenge-ui'))await challengeUIQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-fleet-ui'))await fleetUIQA(win,dir);
+    if(gardenQA&&process.argv.includes('--qa-lessons-ui'))await lessonUIQA(win,dir);
     if(gardenQA&&historyQA)await historyUIQA(win,history().root,dir);
     if(gardenQA&&process.argv.includes('--qa-stream-ui'))await streamUIQA(win,history().root,dir);
     if(performanceRun)await performanceQA(win,history().root,dir);
