@@ -3,6 +3,7 @@ contextBridge.exposeInMainWorld('farm',{
   gardenExamples:()=>ipcRenderer.invoke('gardenExamples'),gardenViewReady:()=>ipcRenderer.invoke('gardenViewReady'),gardenStart:(r:unknown)=>ipcRenderer.invoke('gardenStart',r),gardenCancel:()=>ipcRenderer.invoke('gardenCancel'),
   gardenSave:(r:unknown)=>ipcRenderer.invoke('gardenSave',r),gardenOpen:()=>ipcRenderer.invoke('gardenOpen'),gardenExport:(r:unknown)=>ipcRenderer.invoke('gardenExport',r),
   gardenHistory:(query:unknown)=>ipcRenderer.invoke('gardenHistory',query),gardenHistoryOpen:(request:unknown)=>ipcRenderer.invoke('gardenHistoryOpen',request),
+  gardenHistoryPaged:(id:string)=>ipcRenderer.invoke('gardenHistoryPaged',id),gardenHistoryWindow:(request:unknown)=>ipcRenderer.invoke('gardenHistoryWindow',request),
   onGardenProgress:(callback:(p:unknown)=>void)=>{const fn=(_event:unknown,p:any)=>callback(p);ipcRenderer.on('gardenProgress',fn);return()=>ipcRenderer.removeListener('gardenProgress',fn);},
   onGardenPlayback:(callback:(p:unknown)=>void)=>{const fn=(_event:unknown,p:any)=>callback(p);ipcRenderer.on('gardenPlayback',fn);return()=>ipcRenderer.removeListener('gardenPlayback',fn);},
   gardenFrameReady:(frame:number)=>ipcRenderer.invoke('gardenFrameReady',frame),

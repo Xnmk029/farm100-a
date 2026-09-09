@@ -1,18 +1,23 @@
 import {newAsyncContext,type QuickJSHandle} from 'quickjs-emscripten';
-import {ACTIONS,GardenStop,gardenRun,type GardenAction,type GardenRequest,type GardenEvent,type GardenOutcome} from '../garden/core';
+import {ACTIONS,GARDEN_VERSION,GardenStop,gardenRun,type GardenRun,type GardenAction,type GardenRequest,type GardenEvent,type GardenOutcome} from '../garden/core';
+import {EventBuffer,gardenReceipt,type GardenReceipt} from '../garden/stream';
 import {directions} from '../protocol';
 import {FLEET_APIS} from './protocol';
 import {FleetScheduler,FleetStop} from './scheduler';
 export type FleetOptions={wallMs?:number;memoryBytes?:number;interruptLimit?:number;cancelled?:()=>boolean;onBatch?:(events:GardenEvent[])=>Promise<void>};
 function deferred<T>(){let resolve!:(value:T)=>void;const promise=new Promise<T>(r=>resolve=r);return {promise,resolve};}
-export async function executeFleet(req:GardenRequest,options:FleetOptions={}){
-  const scheduler=new FleetScheduler(req),logs:string[]=[],lanes:Lane[]=[];let outcome:{reason:GardenOutcome;message:string}|undefined,sent=0,logBytes=0;
-  const deadline=performance.now()+(options.wallMs??30000);
+export function executeFleet(req:GardenRequest,options:FleetOptions&{stream:true}):Promise<GardenReceipt>;
+export function executeFleet(req:GardenRequest,options?:FleetOptions&{stream?:false}):Promise<GardenRun>;
+export async function executeFleet(req:GardenRequest,options:FleetOptions&{stream?:boolean}={}){
+  if(options.stream&&(!options.onBatch||req.config.rule!==GARDEN_VERSION))throw Error('流式执行需要当前规则与持久化消费者');
+  const scheduler=new FleetScheduler(req,options.stream?Infinity:24000),logs:string[]=[],lanes:Lane[]=[];let outcome:{reason:GardenOutcome;message:string}|undefined,sent=0,logBytes=0;
+  const buffer=options.stream?new EventBuffer():undefined;if(buffer)scheduler.world.events=buffer;
+  const deadline=performance.now()+(options.wallMs??(options.stream?7200000:30000));let sinkFailed=false,sinkError:unknown;
   type VM=Awaited<ReturnType<typeof newAsyncContext>>;
   type Lane={id:number;vm:VM;box:QuickJSHandle;boundary:ReturnType<typeof deferred<void>>;answer?:ReturnType<typeof deferred<unknown>>;task?:Promise<void>;done:boolean;interrupts:number;diagnosing:boolean;diagnosticDeadline:number};
   const stop=(reason:GardenOutcome,message:string)=>outcome??={reason,message};
   const check=()=>{if(options.cancelled?.())stop('cancelled','用户中止整个编组');if(performance.now()>deadline)stop('wall_timeout','编组执行超过宿主时限');};
-  const flush=async()=>{while(sent<scheduler.events.length){const events=scheduler.events.slice(sent,sent+64);sent+=events.length;await options.onBatch?.(events);}};
+  const flush=async()=>{if(sinkFailed)throw sinkError;try{if(buffer){while(buffer.length){const events=buffer.slice(0,64);await options.onBatch!(events);buffer.release(events.length);}}else while(sent<scheduler.events.length){const events=scheduler.events.slice(sent,sent+64);sent+=events.length;await options.onBatch?.(events);}}catch(e){sinkFailed=true;sinkError=e;throw e;}};
   const boxValue=(vm:VM,v:unknown):QuickJSHandle=>{if(v===null)return vm.null;if(v===undefined)return vm.undefined;if(typeof v==='boolean')return v?vm.true:vm.false;if(typeof v==='number')return vm.newNumber(v);if(typeof v==='string')return vm.newString(v);const h=Array.isArray(v)?vm.newArray():vm.newObject();for(const [k,x]of Object.entries(v as object)){const child=boxValue(vm,x);vm.setProp(h,k,child);child.dispose();}return h;};
   const resume=async(lane:Lane,value?:unknown,start=false)=>{
     lane.boundary=deferred<void>();lane.interrupts=0;
@@ -61,5 +66,5 @@ export async function executeFleet(req:GardenRequest,options:FleetOptions={}){
     await Promise.allSettled(lanes.flatMap(l=>l.task?[l.task]:[]));
     for(const lane of lanes){lane.box.dispose();lane.vm.dispose();}
   }
-  await flush();return gardenRun(req,scheduler.world,outcome?.reason??'finished',outcome?.message??'全部无人机程序结束',logs);
+  await flush();return buffer?gardenReceipt(req,scheduler.world,buffer.total,outcome?.reason??'finished',outcome?.message??'全部无人机程序结束',logs,true,buffer.peak):gardenRun(req,scheduler.world,outcome?.reason??'finished',outcome?.message??'全部无人机程序结束',logs);
 }

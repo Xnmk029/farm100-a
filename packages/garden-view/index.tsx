@@ -8,7 +8,7 @@ const SIN=10/Math.sqrt(228),ANCHOR=.5+.7*Math.sqrt(128)/Math.sqrt(228)/6;
 const names=[...['grass','soil','wet','path'].flatMap(k=>[0,1].map(v=>`tile-${k}-${v}`)),...['wheat','carrot','pumpkin','sunflower','cactus','bean','tree','crystal'].flatMap(k=>[0,1,2,3].map(s=>`${k}-${s}`)),...['barn','tank','crate','fence','pine','rock','composter','workbench','oilpress','loom','pantry','workshop','hedge','gate','relic','key-stone'],...Array.from({length:8},(_,i)=>`drone-${i}`)];
 let textures:Promise<Record<string,Texture>>|undefined;
 function load(){Assets.setPreferences({preferWorkers:false,preferCreateImageBitmap:false});return textures??=Promise.all(names.map(async n=>[n,await Assets.load<Texture>(`${import.meta.env.BASE_URL}assets/farm-v1/${n}.png`)] as const)).then(Object.fromEntries).catch(e=>{textures=undefined;throw e;});}
-type Props={state:GardenState;event?:GardenEvent;nextEvent?:GardenEvent;events?:GardenEvent[];clock:number;cinematicClock?:number;follow:boolean;grid:boolean;selected:number;onSelect:(index:number)=>void;resetKey:number;onReady?:()=>void};
+type Props={state:GardenState;event?:GardenEvent;nextEvent?:GardenEvent;events?:GardenEvent[];future?:GardenEvent[];clock:number;cinematicClock?:number;follow:boolean;grid:boolean;selected:number;onSelect:(index:number)=>void;resetKey:number;onReady?:()=>void};
 
 export function GardenView(props:Props){
   const host=useRef<HTMLDivElement>(null),latest=useRef(props),update=useRef<()=>void>(()=>{});latest.current=props;
@@ -148,13 +148,15 @@ export function GardenView(props:Props){
         }
         if(state.fleet&&latest.current.events){
           const pending=new Set(state.fleet.pending.map(p=>p.actor));
-          for(let i=event?.seq??0;i<latest.current.events.length&&pending.size;i++){
-            const e=latest.current.events[i];if(e.kind==='complete'&&pending.has(e.actor!)){drones[e.actor!].next=e;pending.delete(e.actor!);}
+          const events=latest.current.events,offset=(events[0]?.seq??1)-1;
+          for(let i=Math.max(0,(event?.seq??0)-offset);i<events.length&&pending.size;i++){
+            const e=events[i];if(e.kind==='complete'&&pending.has(e.actor!)){drones[e.actor!].next=e;pending.delete(e.actor!);}
           }
+          for(const e of latest.current.future??[])if(e.seq>(event?.seq??0)&&pending.has(e.actor!)&&state.fleet.pending.some(p=>p.actor===e.actor&&p.start===e.fromTick&&p.action===e.action)){drones[e.actor!].next=e;pending.delete(e.actor!);}
         }
         if(event&&event.seq!==lastSeq){
           const continuous=event.seq>lastSeq&&event.seq-lastSeq<=128&&latest.current.clock>=lastClock&&latest.current.clock-lastClock<=30;
-          if(continuous){for(const e of latest.current.events?.slice(lastSeq,event.seq)??[event])emit(e);}
+          if(continuous){const offset=(latest.current.events?.[0]?.seq??1)-1;for(const e of latest.current.events?.slice(Math.max(0,lastSeq-offset),event.seq-offset)??[event])emit(e);}
           else{particles.forEach(p=>{fx.removeChild(p.s);p.s.destroy();});particles.length=0;}
           lastSeq=event.seq;
           const actor=state.fleet?.drones[event.actor!]??event,p=point(actor.x,actor.y);marker.clear().ellipse(p.x,p.y,TW*.3,TH*.22).stroke({color:event.value===false?0xf08162:event.action==='water'?0x92dcea:0xf2db8a,width:2,alpha:.8});

@@ -47,3 +47,15 @@ test('garden sandbox locks APIs after budget, cancellation, OOM and hostile erro
   const hostile=await executeGarden(request('throw {get name(){till();plant(Wheat);return "Error"},get message(){while(true){}}}'));assert.equal(hostile.events.length,0);assert.equal(hostile.result.reason,'runtime_error');
   const access=await executeGarden(request('if(typeof process!="undefined"||typeof require!="undefined"||typeof fetch!="undefined"||typeof Date!="undefined") throw Error("host leak");'));assert.equal(access.result.reason,'finished');
 });
+
+test('garden setup timeout and cancellation return terminal records without executing guest code',async()=>{
+  const req:GardenRequest={runId:randomUUID(),source:'till();console.log("must not run")',config:gardenDefault};
+  for(const options of [{wallMs:0},{cancelled:()=>true}]){
+    const r=await executeGarden(req,options);
+    assert.equal(r.result.reason,'wallMs' in options?'wall_timeout':'cancelled');
+    assert.equal(r.events.length,0);assert.equal(r.logs.length,0);
+    assert.deepEqual(r.result.state,r.initial);validateGardenRun(r);
+  }
+  const next=await executeGarden({...req,source:'get_position()'});
+  assert.equal(next.result.reason,'finished');assert.equal(next.events.length,1);
+});

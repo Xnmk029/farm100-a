@@ -42,5 +42,5 @@ export async function gardenEconomyQA(win:BrowserWindow,dir:string){
   }finally{dialog.showSaveDialog=saveDialog;dialog.showOpenDialog=openDialog;}
   const dimensions=await js(`({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,overflow:document.documentElement.scrollWidth>innerWidth})`);
   if(dimensions.overflow)throw Error('Horizontal overflow');
-  await writeFile(path.join(dir,'economy-ui-qa.json'),JSON.stringify({pass:true,checks,dimensions,first:{events:first.events.length,grain:first.result.state.inventory.grain},research:{events:research.events.length,grain:research.result.state.inventory.grain,unlocks:research.result.state.economy.unlocks}},null,2));
+  await writeFile(path.join(dir,'economy-ui-qa.json'),JSON.stringify({pass:true,checks,dimensions,first:{events:first.eventCount??first.events.length,grain:first.result.state.inventory.grain},research:{events:research.eventCount??research.events.length,grain:research.result.state.inventory.grain,unlocks:research.result.state.economy.unlocks}},null,2));
 }

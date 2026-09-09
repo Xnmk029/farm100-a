@@ -5,7 +5,7 @@ import {FLEET_APIS,copyFleet,type Pending,type SharedValue} from './protocol';
 export class FleetStop extends Error{constructor(public reason:GardenOutcome,message:string){super(message);}}
 export class FleetScheduler{
   world:Garden;private previous:GardenState;stopped=false;
-  constructor(public req:GardenRequest){
+  constructor(public req:GardenRequest,private eventLimit=24000){
     if(!req.config.drones)throw Error('缺少部署数量');this.world=new Garden(req.config,req.initial);
     this.previous=copyGarden(this.world.state);
   }
@@ -13,6 +13,8 @@ export class FleetScheduler{
   get events(){return this.world.events;}
   get idle(){return this.fleet.drones.filter(d=>d.status==='idle').map(d=>d.id);}
   get done(){return this.fleet.drones.every(d=>d.status==='done');}
+  checkpoint(){return {state:copyGarden(this.world.state),previous:copyGarden(this.previous),stopped:this.stopped};}
+  restore(saved:ReturnType<FleetScheduler['checkpoint']>){this.world.state=copyGarden(saved.state);this.previous=copyGarden(saved.previous);this.stopped=saved.stopped;}
   private ready(actor:number){if(this.stopped||this.idle[0]!==actor)throw new FleetStop('api_error','无人机未按调度顺序到达 API');}
   private describe(action:GardenAction,args:unknown[]){
     if(!(FLEET_APIS as readonly string[]).includes(action))return this.world.describe(action,args);
@@ -28,7 +30,7 @@ export class FleetScheduler{
     this.ready(actor);const {cost,duration}=this.describe(action,args),s=this.world.state;
     const reserved=this.fleet.pending.reduce((a,p)=>a+p.cost,0);
     if(s.cost-this.world.initial.cost+reserved+cost>this.req.config.budget)throw new FleetStop('budget_exceeded','整组操作预算不足，动作未发起');
-    if(this.events.length>=24000)throw new FleetStop('recording_limit','调度记录达到 24,000 事件上限');
+    if(this.events.length>=this.eventLimit)throw new FleetStop('recording_limit','调度记录达到事件上限');
     this.fleet.drones[actor].status='waiting';this.fleet.pending.push({actor,action,args:[...args],start:s.tick,end:action==='barrier'?null:s.tick+duration,cost});
     this.record('dispatch',actor,action,args,null,s.tick);
   }

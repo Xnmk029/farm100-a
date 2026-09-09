@@ -1,0 +1,1002 @@
+{
+  "version": "0.5.2-alpha.1",
+  "rule": "garden-v0.5.0",
+  "date": "2026-09-09T17:56:03.728Z",
+  "pass": true,
+  "source": {
+    "date": "2026-09-10T01:47:39.3141626+08:00",
+    "baseCommit": "e6f20a04db732cbdfb4c7ecee143f3369cb4c759",
+    "typecheck": {
+      "passed": true,
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "log": "artifacts/stream/final-20260910/typecheck.log"
+    },
+    "tests": {
+      "passed": 47,
+      "command": "node node_modules/tsx/dist/cli.mjs --test tests/*.test.ts",
+      "log": "artifacts/stream/final-20260910/tests.log",
+      "total": 47,
+      "failed": 0
+    },
+    "build": {
+      "passed": true,
+      "command": "node scripts/build.mjs",
+      "log": "artifacts/stream/final-20260910/build.log",
+      "files": [
+        {
+          "bytes": 1718,
+          "sha256": "06ac3a1377d4556cbf513be81e4c23e64a30713df925eec63140b361732e5893",
+          "path": "package.json"
+        },
+        {
+          "bytes": 793026,
+          "sha256": "5f6a5e852c56469a83822932a12250b2b0b2f0cf12976f5da07309c8a4d9739b",
+          "path": "dist/main.cjs"
+        },
+        {
+          "bytes": 676921,
+          "sha256": "43102e277df3dd36844ab2103b9cf14deb65fcbc6d7cfbd7d9bd68c11b75f7da",
+          "path": "dist/garden-worker.cjs"
+        },
+        {
+          "bytes": 2549,
+          "sha256": "fdf2cb3c8873b40a86330cacc5cd65318e9a199d0c67208ec706bf2c6961b447",
+          "path": "dist/preload.cjs"
+        }
+      ]
+    }
+  },
+  "packageCommand": "node node_modules/electron-builder/cli.js --win --dir --x64 --publish never --config.directories.output=release/stream-0.5.2-20260910",
+  "qaCommand": "node scripts/stream-release-qa.mjs release/stream-0.5.2-20260910/win-unpacked/FARM100.exe artifacts/stream/final-20260910",
+  "packageContents": {
+    "pass": true,
+    "distFiles": 94,
+    "manifest": "All retained production fields match source; builder removes development metadata"
+  },
+  "packaged": {
+    "version": "0.5.2-alpha.1",
+    "startedAt": "2026-09-09T17:48:53.206Z",
+    "files": [
+      {
+        "path": "F:\\benchmark\\FARM100\\release\\stream-0.5.2-20260910\\win-unpacked\\FARM100.exe",
+        "bytes": 246202368,
+        "sha256": "43c3c56cf18348ea0acb7bd4fd7036a4e765a8c7dcc3b1bacb48bc2d2b42abe4"
+      },
+      {
+        "path": "F:\\benchmark\\FARM100\\release\\stream-0.5.2-20260910\\win-unpacked\\resources\\app.asar",
+        "bytes": 179131914,
+        "sha256": "f80bfde3c545e690f7f717817149a7dd10f696e7a02d9b83d5ab3452557fb90f"
+      }
+    ],
+    "pass": true,
+    "runs": [
+      {
+        "name": "stream-utility",
+        "args": [
+          "--qa-stream-utility"
+        ],
+        "env": {
+          "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\stream-utility"
+        },
+        "startedAt": "2026-09-09T17:48:53.209Z",
+        "exitCode": 0,
+        "completedAt": "2026-09-09T17:49:51.528Z",
+        "proof": {
+          "pass": true,
+          "rows": [
+            {
+              "mode": "complete",
+              "reason": "finished",
+              "complete": true,
+              "events": 1608,
+              "batches": 26,
+              "storageErrors": 0,
+              "runnerPeakEvents": 72,
+              "verifierPeakEvents": 8,
+              "seeks": 0,
+              "maxWindow": 0,
+              "elapsedMs": 1856.4592,
+              "memorySamples": []
+            },
+            {
+              "mode": "cancel-start",
+              "reason": "cancelled",
+              "complete": true,
+              "events": 1,
+              "batches": 1,
+              "storageErrors": 0,
+              "runnerPeakEvents": 1,
+              "verifierPeakEvents": 1,
+              "seeks": 0,
+              "maxWindow": 0,
+              "elapsedMs": 292.7099000000003,
+              "memorySamples": []
+            },
+            {
+              "mode": "cancel",
+              "reason": "cancelled",
+              "complete": true,
+              "events": 73,
+              "batches": 3,
+              "storageErrors": 0,
+              "runnerPeakEvents": 72,
+              "verifierPeakEvents": 8,
+              "seeks": 0,
+              "maxWindow": 0,
+              "elapsedMs": 374.63679999999977,
+              "memorySamples": []
+            },
+            {
+              "mode": "worker-crash",
+              "reason": "runner_crash",
+              "complete": false,
+              "events": 64,
+              "batches": 1,
+              "storageErrors": 0,
+              "runnerPeakEvents": 8,
+              "verifierPeakEvents": 8,
+              "seeks": 0,
+              "maxWindow": 0,
+              "elapsedMs": 355.0135,
+              "memorySamples": []
+            },
+            {
+              "mode": "disk-error",
+              "reason": "runner_crash",
+              "complete": false,
+              "events": 64,
+              "batches": 1,
+              "storageErrors": 1,
+              "runnerPeakEvents": 8,
+              "verifierPeakEvents": 8,
+              "seeks": 0,
+              "maxWindow": 0,
+              "elapsedMs": 348.4069999999997,
+              "memorySamples": []
+            },
+            {
+              "mode": "large",
+              "reason": "finished",
+              "complete": true,
+              "events": 64008,
+              "batches": 1001,
+              "storageErrors": 0,
+              "runnerPeakEvents": 72,
+              "verifierPeakEvents": 8,
+              "seeks": 100,
+              "maxWindow": 256,
+              "elapsedMs": 54467.8985,
+              "memorySamples": [
+                {
+                  "events": 6344,
+                  "hostRSS": 168484864,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 164568,
+                        "peakWorkingSetSize": 166808,
+                        "privateBytes": 160156
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65700,
+                        "peakWorkingSetSize": 65704,
+                        "privateBytes": 61148
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40780,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10932
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 125460,
+                        "peakWorkingSetSize": 128336,
+                        "privateBytes": 217376
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 12744,
+                  "hostRSS": 169263104,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 165296,
+                        "peakWorkingSetSize": 166808,
+                        "privateBytes": 160500
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65700,
+                        "peakWorkingSetSize": 65704,
+                        "privateBytes": 61148
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40780,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10932
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 128340,
+                        "peakWorkingSetSize": 128428,
+                        "privateBytes": 219852
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 19144,
+                  "hostRSS": 172589056,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 168552,
+                        "peakWorkingSetSize": 168556,
+                        "privateBytes": 164160
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65700,
+                        "peakWorkingSetSize": 65704,
+                        "privateBytes": 61148
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40780,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10932
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 156852,
+                        "peakWorkingSetSize": 158040,
+                        "privateBytes": 247832
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 25544,
+                  "hostRSS": 170262528,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 166272,
+                        "peakWorkingSetSize": 169380,
+                        "privateBytes": 161236
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65700,
+                        "peakWorkingSetSize": 65704,
+                        "privateBytes": 61148
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40780,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10932
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 157896,
+                        "peakWorkingSetSize": 159680,
+                        "privateBytes": 249076
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 31944,
+                  "hostRSS": 170467328,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 166472,
+                        "peakWorkingSetSize": 169380,
+                        "privateBytes": 161272
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65700,
+                        "peakWorkingSetSize": 65704,
+                        "privateBytes": 61148
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40780,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10932
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 157600,
+                        "peakWorkingSetSize": 159680,
+                        "privateBytes": 248500
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 38344,
+                  "hostRSS": 170577920,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 166580,
+                        "peakWorkingSetSize": 169380,
+                        "privateBytes": 161344
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65724,
+                        "peakWorkingSetSize": 65728,
+                        "privateBytes": 61156
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40780,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10932
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 158104,
+                        "peakWorkingSetSize": 159680,
+                        "privateBytes": 248768
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 44744,
+                  "hostRSS": 170598400,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 166600,
+                        "peakWorkingSetSize": 169864,
+                        "privateBytes": 161764
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65724,
+                        "peakWorkingSetSize": 65728,
+                        "privateBytes": 61156
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40780,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10932
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 158584,
+                        "peakWorkingSetSize": 160648,
+                        "privateBytes": 249236
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 51144,
+                  "hostRSS": 170795008,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 166792,
+                        "peakWorkingSetSize": 169864,
+                        "privateBytes": 162460
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65764,
+                        "peakWorkingSetSize": 65788,
+                        "privateBytes": 61144
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40764,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10896
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 158632,
+                        "peakWorkingSetSize": 160648,
+                        "privateBytes": 249260
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 57544,
+                  "hostRSS": 170766336,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 166764,
+                        "peakWorkingSetSize": 169864,
+                        "privateBytes": 162348
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65764,
+                        "peakWorkingSetSize": 65788,
+                        "privateBytes": 61144
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40764,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10896
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 158600,
+                        "peakWorkingSetSize": 160648,
+                        "privateBytes": 249196
+                      }
+                    }
+                  ]
+                },
+                {
+                  "events": 63944,
+                  "hostRSS": 171270144,
+                  "processes": [
+                    {
+                      "type": "Browser",
+                      "memory": {
+                        "workingSetSize": 167256,
+                        "peakWorkingSetSize": 169864,
+                        "privateBytes": 163204
+                      }
+                    },
+                    {
+                      "type": "GPU",
+                      "memory": {
+                        "workingSetSize": 65764,
+                        "peakWorkingSetSize": 65788,
+                        "privateBytes": 61144
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "Network Service",
+                      "memory": {
+                        "workingSetSize": 40764,
+                        "peakWorkingSetSize": 40784,
+                        "privateBytes": 10896
+                      }
+                    },
+                    {
+                      "type": "Utility",
+                      "name": "FARM100 garden runner",
+                      "memory": {
+                        "workingSetSize": 158716,
+                        "peakWorkingSetSize": 160648,
+                        "privateBytes": 249252
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "pass": true
+      },
+      {
+        "name": "stream-ui",
+        "args": [
+          "--qa-render",
+          "--qa-garden",
+          "--qa-stream-ui"
+        ],
+        "env": {
+          "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\stream-ui",
+          "FARM100_STREAM_ARCHIVE": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\stream-utility\\large.farmjournal"
+        },
+        "startedAt": "2026-09-09T17:49:51.547Z",
+        "exitCode": 0,
+        "completedAt": "2026-09-09T17:53:01.177Z",
+        "proof": {
+          "pass": true,
+          "events": 64008,
+          "seeks": [
+            {
+              "tick": 0,
+              "seq": 8,
+              "window": 136
+            },
+            {
+              "tick": 3999,
+              "seq": 63992,
+              "window": 128
+            },
+            {
+              "tick": 12.5,
+              "seq": 200,
+              "window": 256
+            },
+            {
+              "tick": 2000,
+              "seq": 32008,
+              "window": 256
+            },
+            {
+              "tick": 64,
+              "seq": 1032,
+              "window": 256
+            },
+            {
+              "tick": 4000,
+              "seq": 64008,
+              "window": 128
+            },
+            {
+              "tick": 100.5,
+              "seq": 1608,
+              "window": 256
+            },
+            {
+              "tick": 3000,
+              "seq": 48008,
+              "window": 256
+            },
+            {
+              "tick": 1,
+              "seq": 24,
+              "window": 200
+            },
+            {
+              "tick": 500,
+              "seq": 8008,
+              "window": 256
+            }
+          ],
+          "checks": [
+            "portable import through shipped handler and validator (QA substitutes native dialog path)",
+            "10 out-of-order time seeks match disk world",
+            "bounded renderer window",
+            "play crosses page boundaries",
+            "portable export and reopen",
+            "8 drones rendered"
+          ]
+        },
+        "pass": true
+      },
+      {
+        "name": "history-crash",
+        "args": [
+          "--qa-history-crash"
+        ],
+        "env": {
+          "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\history",
+          "FARM100_QA_PROFILE": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\history-profile"
+        },
+        "startedAt": "2026-09-09T17:53:01.210Z",
+        "exitCode": 86,
+        "completedAt": "2026-09-09T17:53:02.510Z",
+        "pass": true
+      },
+      {
+        "name": "history-ui",
+        "args": [
+          "--qa-render",
+          "--qa-garden",
+          "--qa-history-ui"
+        ],
+        "env": {
+          "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\history",
+          "FARM100_QA_PROFILE": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\history-profile"
+        },
+        "startedAt": "2026-09-09T17:53:02.547Z",
+        "exitCode": 0,
+        "completedAt": "2026-09-09T17:53:23.687Z",
+        "proof": {
+          "pass": true,
+          "abruptParentExit": 86,
+          "recoveredId": "342f9257-1aa9-4272-81d2-3becf9771383",
+          "recoveredEvents": 200,
+          "recoveredTick": 63,
+          "newRun": "7ec5bf5c-51e8-491d-a2ff-aff18f1f2c95",
+          "indexedSeeks": 100,
+          "checks": [
+            "separate process reopening same profile",
+            "durable prefix recovered after abrupt desktop exit",
+            "shared fleet board and cost restored",
+            "explicit pending cancellation",
+            "new run persisted",
+            "open does not execute",
+            "indexed 100-point replay",
+            "search filters"
+          ]
+        },
+        "pass": true
+      },
+      {
+        "name": "economy",
+        "args": [
+          "--qa-render",
+          "--qa-garden",
+          "--qa-economy-ui"
+        ],
+        "env": {
+          "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\economy"
+        },
+        "startedAt": "2026-09-09T17:53:23.711Z",
+        "exitCode": 0,
+        "completedAt": "2026-09-09T17:53:40.993Z",
+        "proof": {
+          "pass": true,
+          "checks": [
+            "panel 研究",
+            "panel 加工",
+            "panel 任务",
+            "panel 手册",
+            "fresh land and resource gate",
+            "beginner program through utility bridge",
+            "research consumes grain",
+            "direct action final state is paused",
+            "editor preserved",
+            "save and reopen through shipped handlers"
+          ],
+          "dimensions": {
+            "width": 1920,
+            "height": 1080,
+            "dpr": 1,
+            "overflow": false
+          },
+          "first": {
+            "events": 74,
+            "grain": 12
+          },
+          "research": {
+            "events": 1,
+            "grain": 0,
+            "unlocks": [
+              "carrot"
+            ]
+          }
+        },
+        "pass": true
+      },
+      {
+        "name": "challenge",
+        "args": [
+          "--qa-render",
+          "--qa-garden",
+          "--qa-challenge-ui"
+        ],
+        "env": {
+          "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\challenge",
+          "FARM100_CHALLENGE": "maze-3"
+        },
+        "startedAt": "2026-09-09T17:53:41.013Z",
+        "exitCode": 0,
+        "completedAt": "2026-09-09T17:54:02.429Z",
+        "proof": {
+          "pass": true,
+          "checks": [
+            "picker",
+            "utility execution",
+            "fixed restart after seek",
+            "key and relic replay",
+            "failure remains failure",
+            "session history",
+            "free farm restored",
+            "same clock side-by-side comparison without executing code"
+          ],
+          "baseline": {
+            "goals": [
+              {
+                "id": "relics",
+                "value": 3,
+                "target": 3
+              },
+              {
+                "id": "home",
+                "value": 1,
+                "target": 1
+              }
+            ],
+            "passed": true,
+            "spent": {},
+            "produced": {},
+            "primary": "tick",
+            "tick": 665,
+            "cost": 213,
+            "harvests": 0,
+            "failedActions": 18,
+            "reason": "finished"
+          },
+          "improved": {
+            "goals": [
+              {
+                "id": "relics",
+                "value": 3,
+                "target": 3
+              },
+              {
+                "id": "home",
+                "value": 1,
+                "target": 1
+              }
+            ],
+            "passed": true,
+            "spent": {},
+            "produced": {},
+            "primary": "tick",
+            "tick": 295,
+            "cost": 119,
+            "harvests": 0,
+            "failedActions": 0,
+            "reason": "finished"
+          },
+          "failure": {
+            "goals": [
+              {
+                "id": "relics",
+                "value": 0,
+                "target": 3
+              },
+              {
+                "id": "home",
+                "value": 1,
+                "target": 1
+              }
+            ],
+            "passed": false,
+            "spent": {},
+            "produced": {},
+            "primary": "tick",
+            "tick": 10,
+            "cost": 2,
+            "harvests": 0,
+            "failedActions": 2,
+            "reason": "finished"
+          }
+        },
+        "pass": true
+      },
+      {
+        "name": "fleet",
+        "args": [
+          "--qa-render",
+          "--qa-garden",
+          "--qa-fleet-ui"
+        ],
+        "env": {
+          "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\fleet"
+        },
+        "startedAt": "2026-09-09T17:54:02.460Z",
+        "exitCode": 0,
+        "completedAt": "2026-09-09T17:54:31.429Z",
+        "proof": {
+          "pass": true,
+          "checks": [
+            "fresh research gates",
+            "1 and 8 real worker executions",
+            "partition speedup",
+            "8 actors at 720p and 1080p",
+            "same task comparison",
+            "pending prefix explicitly cancelled",
+            "restart from earned world",
+            "fleet and shared board save/reopen"
+          ],
+          "one": {
+            "goals": [
+              {
+                "id": "grain",
+                "value": 192,
+                "target": 192
+              }
+            ],
+            "passed": true,
+            "spent": {},
+            "produced": {
+              "grain": 192
+            },
+            "primary": "tick",
+            "tick": 703,
+            "cost": 194,
+            "harvests": 64,
+            "failedActions": 0,
+            "reason": "finished"
+          },
+          "eight": {
+            "goals": [
+              {
+                "id": "grain",
+                "value": 192,
+                "target": 192
+              }
+            ],
+            "passed": true,
+            "spent": {},
+            "produced": {
+              "grain": 192
+            },
+            "primary": "tick",
+            "tick": 143,
+            "cost": 264,
+            "harvests": 64,
+            "failedActions": 0,
+            "reason": "finished"
+          }
+        },
+        "pass": true
+      }
+    ],
+    "limits": [
+      "Development-machine packaged QA, not clean Windows installation acceptance",
+      "Native file dialog choices are substituted by the QA harness",
+      "Large record is an 8x8 eight-drone wait workload, not 32x32 mixed production performance"
+    ],
+    "completedAt": "2026-09-09T17:54:32.043Z"
+  },
+  "parentCrash": {
+    "id": "342f9257-1aa9-4272-81d2-3becf9771383",
+    "events": 200,
+    "tick": 63,
+    "profile": "F:\\benchmark\\FARM100\\artifacts\\stream\\final-20260910\\history-profile"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/stream/final-20260910/source-verification.json",
+      "sha256": "a9a0bfa6264371cae3948c7f3c2928bbf5f9417052dbc9243793d6fa0abe26e3"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/package-content-verification.json",
+      "sha256": "a043d4b30d496a96cc6c1adee1a0715a8b9dc08e0283b25d913e749714b0b707"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/packaged-verification.json",
+      "sha256": "c10b8376344708081048413ea74ad45aeaeb1fb51d8db27ad8b33ed2df026e7c"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/tests.log",
+      "sha256": "b0e8e3a38db6a53ade010085da1e66d9c845a632b913f0d5d20348a53781557e"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/build.log",
+      "sha256": "ce06afefa210c2241d197138e35e0afe469c8095bf93a79aadcf656c1011eb3d"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/package.log",
+      "sha256": "bcde358bf40ccb6053c889c2fa435a06ea968e90841e6ed0e7139cfd0c90f79b"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/stream-utility/stream-utility-qa.json",
+      "sha256": "e99cc9ffdceabd5fdd43fdb8f4ba060ba5a634799f96ab9c64bf74663d27fe4d"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/stream-ui/stream-ui-qa.json",
+      "sha256": "148dbae9d81ec6cc29e715526ef9e46637b55532b9d0023872d58e3348cf05cc"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/history/crash-proof.json",
+      "sha256": "587aeb06a344e57c8ac02d575c343162d8503f579bb6c72a0ee5ba307d71563e"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/history/history-ui-qa.json",
+      "sha256": "05d72bdc4c7e3c70aaa193cab23168af24a606d546d349c7cb4cd63df68bb0fa"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/economy/economy-ui-qa.json",
+      "sha256": "71365ce33d05e864671ba09163e2667456e076aa3004cfdac77a9cd8f6c5da72"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/challenge/challenge-ui-qa.json",
+      "sha256": "9bd5ae66bfc1446e087cac75b6b181a608b4b1fdc959b92daf015f4d2d02af26"
+    },
+    {
+      "path": "artifacts/stream/final-20260910/fleet/fleet-ui-qa.json",
+      "sha256": "f3180e1d54e42781498c00d350d4667e0cb7ce29644883327273de94695cc882"
+    }
+  ],
+  "scope": {
+    "boundedWorkerEvents": true,
+    "incrementalRuleVerification": true,
+    "pagedRenderer": true,
+    "portableArchiveRoundtrip": true,
+    "crossProcessCrashRecovery": true,
+    "currentPackagedRegression": true,
+    "cleanWindowsAcceptance": false,
+    "thirtyMinuteMixedProductionPerformance": false,
+    "fullAudiovisualAcceptance": false,
+    "originalGameComparison": false
+  }
+}

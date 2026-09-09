@@ -9,7 +9,7 @@ export async function fleetUIQA(win:BrowserWindow,dir:string){
   const click=async(label:string)=>{await js(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(!b||b.disabled)throw Error('Unavailable '+${JSON.stringify(label)});b.click();})()`);await settle();};
   const deploy=async(n:number)=>{await js(`(()=>{const s=document.querySelector('[aria-label="部署无人机"]');if(s.disabled||[...s.options].find(o=>o.value==='${n}').disabled)throw Error('Deployment locked');s.value='${n}';s.dispatchEvent(new Event('change',{bubbles:true}));})()`);await settle();};
   const shot=async(name:string)=>{await settle();await writeFile(path.join(dir,name+'.png'),(await win.webContents.capturePage()).toPNG());};
-  const waitRun=async(n:number):Promise<GardenRun>=>{for(let i=0;i<120;i++){const r=await js(`window.__fleetRuns[${n-1}]`);if(r)return validateGardenRun(r);await settle();}throw Error('Fleet UI timed out');};
+  const waitRun=async(n:number):Promise<GardenRun>=>{for(let i=0;i<120;i++){let r=await js(`window.__fleetRuns[${n-1}]`);if(r){if(r.format==='farm100-garden-receipt')r=(await js(`window.farm.gardenHistoryOpen({id:${JSON.stringify(r.runId)}})`)).run;return validateGardenRun(r);}await settle();}throw Error('Fleet UI timed out');};
   await click('新农场');
   if(!await js(`document.querySelector('[aria-label="部署无人机"] option[value="8"]').disabled`))throw Error('Fresh farm bypassed research');
   await click('挑战');await js(`document.querySelector('[data-challenge-id="fleet-harvest"] button').click()`);await settle();

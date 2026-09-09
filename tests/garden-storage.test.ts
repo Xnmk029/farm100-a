@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {mkdtemp,readFile,writeFile,unlink} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
+import {canonical} from '../packages/protocol';
 import {GardenJournal,GardenHistory} from '../packages/garden-storage/journal';
 import {executeGarden} from '../packages/garden/runner';
-import {gardenDefault,gardenAt,validateGardenRun} from '../packages/garden/core';
+import {gardenDefault,gardenAt,gardenSequence,validateGardenRun} from '../packages/garden/core';
 import {challengeConfig} from '../packages/garden/challenges';
 import {challengeSource} from '../packages/garden/challenge-examples';
 const root=()=>mkdtemp(path.join(os.tmpdir(),'farm100-journal-test-'));
@@ -45,4 +46,42 @@ test('history filters, pagination and legacy imports preserve their rule version
   for(let i=0;i<3;i++){const req={runId:randomUUID(),config:gardenDefault,source:'// searchable '+i+'\nwait(1);'},j=await GardenJournal.create(dir,req);const run=await executeGarden(req,{onBatch:e=>j.append(e)});await j.finish(run);}
   const page=await h.list({query:'searchable',limit:2});assert.equal(page.total,3);assert.equal(page.items.length,2);
   assert.equal((await h.list({query:'searchable',limit:2,offset:2})).items.length,1);assert.equal((await h.list({mode:'challenge'})).total,0);
+});
+test('paged records validate and seek by time or sequence without materializing a run',async()=>{
+  for(const config of [gardenDefault,challengeConfig('fleet-repair',7,8)]){
+    const dir=await root(),req={runId:randomUUID(),config,source:config.challenge?challengeSource(config.challenge):'for(let i=0;i<150;i++){till();wait(1);}'},j=await GardenJournal.create(dir,req);
+    const expected=await executeGarden(req),receipt=await executeGarden(req,{stream:true,onBatch:e=>j.append(e)});await j.finish(receipt);
+    const h=new GardenHistory(dir);await assert.rejects(()=>h.window(req.runId,{seq:0}),/先校验/);
+    const opened=await h.openPaged(req.runId);assert.equal(opened.warning,'');assert.deepEqual(opened.receipt.result,receipt.result);assert.equal(opened.receipt.eventCount,expected.events.length);
+    for(let i=0;i<100;i++){
+      const tick=i*7919%(expected.result.state.tick+1),seq=gardenSequence(expected,tick),window=await h.window(req.runId,{tick});
+      assert.equal(window.seq,seq);assert.deepEqual(window.state,gardenAt(expected,seq));assert.ok(window.events.length<=320);
+      const n=i*313%(expected.events.length+1);assert.deepEqual((await h.window(req.runId,{seq:n})).state,gardenAt(expected,n));
+      for(const e of window.future)assert.deepEqual(e,expected.events[e.seq-1]);
+      for(const p of window.events.at(-1)?.fleet?.pending??[]){if(p.action!=='move')continue;const completion=expected.events.find(e=>e.kind==='complete'&&e.actor===p.actor&&e.fromTick===p.start&&e.tick===p.end);if(completion)assert.ok(window.future.some(e=>e.seq===completion.seq));}
+    }
+    await unlink(path.join(j.dir,'index.json'));assert.deepEqual((await h.window(req.runId,{seq:7})).state,gardenAt(expected,7));
+    const changed=JSON.parse(await readFile(path.join(j.dir,'chunks','00000000.json'),'utf8'));changed.events[0].cost++;await writeFile(path.join(j.dir,'chunks','00000000.json'),JSON.stringify(changed));
+    await assert.rejects(()=>h.window(req.runId,{seq:1}),/改变/);
+  }
+});
+test('paged recovery rejects rule forgery even with recomputed checksums and accepts no part of the chunk',async()=>{
+  const dir=await root(),req={runId:randomUUID(),config:challengeConfig('fleet-harvest',0,8),source:challengeSource('fleet-harvest')},j=await GardenJournal.create(dir,req),run=await executeGarden(req,{onBatch:e=>j.append(e)});await j.finish(run);
+  const file=path.join(j.dir,'chunks','00000001.json'),chunk=JSON.parse(await readFile(file,'utf8'));chunk.events.at(-1).cost++;
+  const {hash,...payload}=chunk;chunk.hash=createHash('sha256').update(canonical(payload)).digest('hex');await writeFile(file,JSON.stringify(chunk));
+  const h=new GardenHistory(dir),opened=await h.openPaged(req.runId);assert.equal(opened.receipt.eventCount,64);assert.equal(opened.receipt.complete,false);assert.match(opened.warning,/引擎不一致/);assert.deepEqual(opened.receipt.result.state,gardenAt(run,64));
+  assert.deepEqual((await h.window(req.runId,{seq:1000})).state,gardenAt(run,64));
+});
+test('paged recovery preserves a prefix ending inside tied completions',async()=>{
+  const dir=await root(),req={runId:randomUUID(),config:challengeConfig('fleet-harvest',0,8),source:'wait(1);'},run=await executeGarden(req),j=await GardenJournal.create(dir,req);await j.append(run.events.slice(0,9));
+  const h=new GardenHistory(dir),opened=await h.openPaged(req.runId);assert.equal(opened.receipt.eventCount,9);assert.equal(opened.receipt.complete,false);assert.deepEqual(opened.receipt.result.state,gardenAt(run,9));
+  assert.deepEqual((await h.window(req.runId,{tick:1})).state,gardenAt(run,9));
+});
+test('portable streamed archive imports under a fresh identity and rejects incomplete or forged data',async()=>{
+  const dir=await root(),req={runId:randomUUID(),config:challengeConfig('fleet-harvest',0,8),source:challengeSource('fleet-harvest')},j=await GardenJournal.create(dir,req),run=await executeGarden(req,{stream:true,onBatch:e=>j.append(e)});await j.finish(run);
+  const h=new GardenHistory(dir),file=path.join(dir,'export.farmjournal');await h.exportPaged(req.runId,file);const imported=await h.importPaged(file);
+  assert.notEqual(imported.receipt.runId,req.runId);assert.equal(imported.warning,'');assert.equal(imported.receipt.eventCount,run.eventCount);assert.deepEqual(imported.receipt.result,run.result);assert.equal((await h.list()).total,2);
+  const text=await readFile(file,'utf8'),lines=text.trimEnd().split('\n');
+  await writeFile(file,lines.slice(0,-1).join('\n')+'\n');await assert.rejects(()=>h.importPaged(file),/不完整/);assert.equal((await h.list()).total,2);
+  const forged=JSON.parse(lines.at(-1)!);forged.receipt.result.state.cost++;lines[lines.length-1]=JSON.stringify(forged);await writeFile(file,lines.join('\n')+'\n');await assert.rejects(()=>h.importPaged(file),/结束状态不一致/);assert.equal((await h.list()).total,2);
 });
