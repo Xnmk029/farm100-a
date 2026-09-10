@@ -1,0 +1,243 @@
+{
+  "version": "0.5.3-alpha.2",
+  "sourceCommit": "88bedc5",
+  "rule": "garden-v0.5.0",
+  "pass": true,
+  "completedAt": "2026-09-09T21:16:41.219Z",
+  "packageFiles": [
+    {
+      "path": "F:\\benchmark\\FARM100\\release\\large-farm-0.5.3-r2\\win-unpacked\\FARM100.exe",
+      "sha256": "94faf75d65c8db5900c9f594a0d99b75346eb5431646da25c8114628ace87b90"
+    },
+    {
+      "path": "F:\\benchmark\\FARM100\\release\\large-farm-0.5.3-r2\\win-unpacked\\resources\\app.asar",
+      "sha256": "4dd1eb35cd185afc3fa69e18f8188e881cb0ab72d8811f0538cee9ed44cb4a41"
+    }
+  ],
+  "input": "F:\\benchmark\\FARM100\\artifacts\\large-farm\\preparation-v2\\earned.garden.json",
+  "inputSHA256": "d0829ecde26cd5386ddbe4d2ea0939101f197842688881ede9abfa81ae07d7b2",
+  "runs": [
+    {
+      "name": "compatibility",
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "scripts/stream-release-qa.mjs",
+        "F:\\benchmark\\FARM100\\release\\large-farm-0.5.3-r2\\win-unpacked\\FARM100.exe",
+        "F:\\benchmark\\FARM100\\artifacts\\large-farm\\release-r2-20260910\\compatibility"
+      ],
+      "env": {},
+      "startedAt": "2026-09-09T19:32:51.727Z",
+      "exitCode": 0,
+      "completedAt": "2026-09-09T19:40:48.282Z"
+    },
+    {
+      "name": "calibration",
+      "command": "F:\\benchmark\\FARM100\\release\\large-farm-0.5.3-r2\\win-unpacked\\FARM100.exe",
+      "args": [
+        "--qa-render",
+        "--qa-garden",
+        "--qa-performance"
+      ],
+      "env": {
+        "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\large-farm\\release-r2-20260910\\calibration",
+        "FARM100_PERF_SECONDS": "120",
+        "FARM100_PERF_SAVE": "F:\\benchmark\\FARM100\\artifacts\\large-farm\\preparation-v2\\earned.garden.json"
+      },
+      "startedAt": "2026-09-09T19:40:48.314Z",
+      "exitCode": 0,
+      "completedAt": "2026-09-09T19:43:33.752Z",
+      "proof": {
+        "pass": true,
+        "p95Ms": 5.9,
+        "cancelMs": 684.7376999999979,
+        "events": 10021,
+        "checks": {
+          "duration": false,
+          "frameP95": true,
+          "allCrops": true,
+          "live": true,
+          "memory": true,
+          "cancel": true,
+          "recovered": true
+        }
+      }
+    },
+    {
+      "name": "performance-30m",
+      "command": "F:\\benchmark\\FARM100\\release\\large-farm-0.5.3-r2\\win-unpacked\\FARM100.exe",
+      "args": [
+        "--qa-render",
+        "--qa-garden",
+        "--qa-performance"
+      ],
+      "env": {
+        "FARM100_QA_DIR": "F:\\benchmark\\FARM100\\artifacts\\large-farm\\release-r2-20260910\\performance-30m",
+        "FARM100_PERF_SECONDS": "1800",
+        "FARM100_PERF_SAVE": "F:\\benchmark\\FARM100\\artifacts\\large-farm\\preparation-v2\\earned.garden.json"
+      },
+      "startedAt": "2026-09-09T19:43:33.786Z",
+      "exitCode": 0,
+      "completedAt": "2026-09-09T20:31:11.543Z",
+      "proof": {
+        "pass": true,
+        "p95Ms": 11.2,
+        "cancelMs": 1157.3234999999404,
+        "events": 159039,
+        "checks": {
+          "duration": true,
+          "frameP95": true,
+          "allCrops": true,
+          "live": true,
+          "memory": true,
+          "cancel": true,
+          "recovered": true
+        }
+      }
+    },
+    {
+      "name": "archive",
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "scripts/large-farm-archive-qa.ts",
+        "F:\\benchmark\\FARM100\\artifacts\\large-farm\\release-r2-20260910\\performance-30m",
+        "F:\\benchmark\\FARM100\\artifacts\\large-farm\\release-r2-20260910\\archive"
+      ],
+      "env": {},
+      "startedAt": "2026-09-09T20:31:11.559Z",
+      "exitCode": 0,
+      "completedAt": "2026-09-09T21:16:38.374Z"
+    }
+  ],
+  "performance": {
+    "checks": {
+      "duration": true,
+      "frameP95": true,
+      "allCrops": true,
+      "live": true,
+      "memory": true,
+      "cancel": true,
+      "recovered": true
+    },
+    "p95Ms": 11.2,
+    "cancelMs": 1157.3234999999404,
+    "events": 159039,
+    "rss": {
+      "middleMedian": 1015721984,
+      "lastMedian": 1027641344,
+      "max": 1073893376
+    }
+  },
+  "archive": {
+    "path": "F:\\benchmark\\FARM100\\artifacts\\large-farm\\release-r2-20260910\\archive\\production.farmjournal",
+    "bytes": 130798256,
+    "sha256": "bb269c8af78ad275e7c80490a238da67efbd42a91ce639194d231d5958092a7a",
+    "events": 159039,
+    "chunks": 3728,
+    "compression": {
+      "encodedBytes": 97833674,
+      "rawBytes": 1419227625,
+      "ratio": 0.0689344487639888
+    },
+    "seeks": 200,
+    "peakWindow": {
+      "source": 274,
+      "imported": 274
+    },
+    "production": {
+      "ticks": 41349,
+      "harvests": 12291,
+      "planted": 13261,
+      "shared": {
+        "processing": 7,
+        "cycles2": 12,
+        "cycles3": 13,
+        "cycles4": 13,
+        "cycles5": 12,
+        "cycles6": 13,
+        "cycles7": 12,
+        "cycles1": 12,
+        "cycles0": 13
+      },
+      "counterDelta": {
+        "get_position": 8,
+        "get_progress": 0,
+        "get_inventory": 251,
+        "inspect": 25190,
+        "tilled": 960,
+        "till": 960,
+        "plant:wheat": 8127,
+        "plant": 13261,
+        "watered": 5842,
+        "water": 5842,
+        "move": 13702,
+        "harvest:wheat": 7520,
+        "harvest": 11697,
+        "wait": 0,
+        "research:carrot": 0,
+        "research": 0,
+        "research:waterworks": 0,
+        "plant:carrot": 876,
+        "harvest:carrot": 804,
+        "research:composting": 0,
+        "craft:compost": 35,
+        "craft": 115,
+        "research:soilcare": 0,
+        "research:orchard": 0,
+        "plant:tree": 838,
+        "harvest:tree": 782,
+        "research:carpentry": 0,
+        "research:sunflowers": 0,
+        "craft:boards": 499,
+        "plant:sunflower": 838,
+        "harvest:sunflower": 774,
+        "research:oilpress": 0,
+        "research:irrigation": 0,
+        "research:pumpkins": 0,
+        "research:cacti": 0,
+        "plant:cactus": 836,
+        "harvest:cactus": 780,
+        "research:fiberwork": 0,
+        "craft:rope": 53,
+        "research:trellis": 0,
+        "research:survey": 0,
+        "craft:oil": 80,
+        "research:fieldtools": 0,
+        "plant:bean": 803,
+        "harvest:bean": 748,
+        "research:canning": 0,
+        "craft:preserves": 53,
+        "plant:pumpkin": 836,
+        "harvest:pumpkin": 784,
+        "research:crystals": 0,
+        "plant:crystal": 107,
+        "group_harvest": 796,
+        "repair": 108,
+        "harvest:crystal": 99,
+        "research:workshop": 0,
+        "research:expansion": 0,
+        "craft:parts": 107,
+        "research:harvester": 0,
+        "fertilize": 0,
+        "expand": 0,
+        "get_size": 8,
+        "refill": 200,
+        "research:fleet2": 0,
+        "research:fleet4": 0,
+        "research:fleet8": 0
+      }
+    }
+  },
+  "determinism": {
+    "repeats": 10,
+    "seeks": 100,
+    "events": 9944,
+    "eventHash": "207e946e840e5c1445166e3eef1ab51a20e75c4aec44a97c453c1a9252b83c9f",
+    "resultHash": "17d82e98eeea1b5d1865b02d59373fa762f8c53375500880e180256fb1db8ce9"
+  },
+  "limits": [
+    "Large-farm stage acceptance only; full product goal remains active",
+    "Teaching/audio follow-up code is not part of this frozen package",
+    "Clean Windows and original-game/external evaluation remain pending"
+  ]
+}
