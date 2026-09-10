@@ -16,6 +16,7 @@ import {fleetUIQA} from './fleet-qa';
 import {crashHistoryQA,historyUIQA,historyUtilityQA} from './history-qa';
 import {performanceQA} from './performance-qa';
 import {lessonUIQA} from './lesson-qa';
+import {displayUIQA} from './display-qa';
 import {lessonWorld,gradeLesson} from '../../../../packages/garden/lessons';
 import {streamUtilityQA,streamUIQA} from './stream-qa';
 import {GardenJournal,GardenHistory} from '../../../../packages/garden-storage/journal';
@@ -27,6 +28,7 @@ import {challengeSource} from '../../../../packages/garden/challenge-examples';
 import {GardenConfigSchema,gardenDefault,validateGardenState,validateGardenRun,GARDEN_VERSION,type GardenRun,type GardenRequest} from '../../../../packages/garden/core';
 
 const performanceRun=process.argv.includes('--qa-performance');
+const displayRun=process.argv.includes('--qa-display-ui');
 const qa=process.argv.includes('--qa-utility');
 const renderQA=process.argv.includes('--qa-render');
 const gardenQA=process.argv.includes('--qa-garden');
@@ -36,7 +38,7 @@ const historyCrash=process.argv.includes('--qa-history-crash'),historyQA=process
 const streamUtility=process.argv.includes('--qa-stream-utility');
 const singleInstance=qa||renderQA||historyCrash||historyUtility||streamUtility||gardenUtilityQA||app.requestSingleInstanceLock();
 if(!singleInstance)app.quit();
-if(renderQA)app.commandLine.appendSwitch('force-device-scale-factor','1');
+if(renderQA){const dpr=process.argv.includes('--qa-display-ui')?process.env.FARM100_QA_DPR??'1':'1';if(!['1','1.5','2'].includes(dpr))throw Error('Unsupported display QA scale');app.commandLine.appendSwitch('force-device-scale-factor',dpr);}
 // QA capture allocates native image memory outside V8's normal heap accounting.
 // This constant host-only expression exposes GC for the offline capture harness;
 // participant programs still execute exclusively in the isolated QuickJS worker.
@@ -111,8 +113,8 @@ app.whenReady().then(async()=>{
       renderRuns.push(await launchRun(req,worker,()=>{}).promise);
     }
   }
-  win=new BrowserWindow({width:1440,height:940,minWidth:1050,minHeight:700,show:!renderQA||performanceRun,backgroundColor:'#101813',title:'FARM100 · 算法农场',autoHideMenuBar:true,
-    webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:!renderQA,offscreen:renderQA&&!performanceRun}});
+  win=new BrowserWindow({width:1440,height:940,minWidth:900,minHeight:500,show:!renderQA||performanceRun||displayRun,backgroundColor:'#101813',title:'FARM100 · 算法农场',autoHideMenuBar:true,
+    webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:!renderQA,offscreen:renderQA&&!performanceRun&&!displayRun}});
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   if(renderQA)win.webContents.on('console-message',(_event,level,message)=>console.log('RENDER',level,message));
   win.webContents.on('will-navigate',(event)=>event.preventDefault());
@@ -232,6 +234,7 @@ app.whenReady().then(async()=>{
     if(gardenQA&&process.argv.includes('--qa-challenge-ui'))await challengeUIQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-fleet-ui'))await fleetUIQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-lessons-ui'))await lessonUIQA(win,dir);
+    if(gardenQA&&process.argv.includes('--qa-display-ui'))await displayUIQA(win,dir);
     if(gardenQA&&historyQA)await historyUIQA(win,history().root,dir);
     if(gardenQA&&process.argv.includes('--qa-stream-ui'))await streamUIQA(win,history().root,dir);
     if(performanceRun)await performanceQA(win,history().root,dir);
