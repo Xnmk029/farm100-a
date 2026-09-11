@@ -33,7 +33,7 @@
 
 Spark 通过本机 Codex CLI 的正常 ChatGPT 登录实际调用；关闭 shell/multi_agent，使用独立空目录与临时上下文，未提取令牌拼接请求。运行横幅确认 `gpt-5.3-codex-spark`，未替换模型。
 
-Spark 曾因额度耗尽暂停，2026年9月11日额度恢复后接续未完成项，保留所有有效首答和一次修订。现有配额/鉴权/限流熔断和暂停检查点，未把基础设施错误算成解题失败。两模型最终覆盖率和分数以随包 `SCORES.md`、`report.json` 为准；逐题理由与难度观察分别见 `AI-REVIEW-REPORT.md`、`DIFFICULTY.md`。
+Spark 曾因额度耗尽暂停，2026年9月11日额度短暂恢复后接续执行：lesson-wait/function/memory/path 首答通过，lesson-schedule 与 lesson-resources 两轮均因超时或未预期失败动作未过，随后 lesson-capstone 调用再次触发周额度限制并自动熔断回暂停检查点。当前 Spark 覆盖 68/93，尚缺 lesson-capstone 与 legacy-sort（24 例）两次调用；保留所有有效首答和一次修订，待额度恢复（提示为 9月15日）后可用 `--resume-infrastructure` 续跑。现有配额/鉴权/限流熔断和暂停检查点，未把基础设施错误算成解题失败。两模型最终覆盖率和分数以随包 `SCORES.md`、`report.json` 为准；逐题理由与难度观察分别见 `AI-REVIEW-REPORT.md`、`DIFFICULTY.md`。
 
 OpenCode Go 的 DeepSeek-V4-Flash 与 MiMo-V2.5 试跑均返回401。直接 DeepSeek 官方端点接通并返回 `deepseek-flash`，与请求 `deepseek-v4-flash` 不同，按身份不匹配停止，没有静默接受别名，也没有进入批量榜单。仅保存配置来源与脱敏元数据。
 
