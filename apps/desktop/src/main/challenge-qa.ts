@@ -14,6 +14,7 @@ export async function challengeUIQA(win:BrowserWindow,dir:string){
   await click('▶ 从固定初始世界执行');
   const waitRun=async(n:number):Promise<GardenRun>=>{for(let i=0;i<100;i++){const r=await js(`window.__challengeRuns[${n-1}]`);if(r)return validateGardenRun(r);await settle();}throw Error('Challenge UI execution timed out');};
   const base=await waitRun(1);if(!evaluateChallenge(base)!.passed)throw Error('Baseline failed');
+  await settle();if(!await js(`document.querySelector('[data-challenge-score="100"]')?.textContent.includes('具备效率排名资格')`))throw Error('Passing challenge score missing');
   win.webContents.send('gardenPlayback',{tick:base.result.state.tick/2,speed:24,cinema:false,playing:false});await settle();
   await click('改进');await click('▶ 从固定初始世界执行');const improved=await waitRun(2);
   if(!evaluateChallenge(improved)!.passed||canonical(improved.initial)!==canonical(base.initial))throw Error('Challenge inherited replay state');
@@ -25,11 +26,13 @@ export async function challengeUIQA(win:BrowserWindow,dir:string){
   for(let i=0;i<30;i++){if(await js(`document.querySelectorAll('.challenge-comparison .garden-canvas[data-ready=true]').length===2`))break;await settle();}
   await js(`(()=>{const s=document.querySelector('[aria-label="对比速度"]');s.value='240';s.dispatchEvent(new Event('change',{bubbles:true}));})()`);
   await click('播放对比');await new Promise(r=>setTimeout(r,700));await click('暂停对比');await shot('challenge-comparison');
+  if(!await js(`document.querySelector('.challenge-comparison header').textContent.includes('B 相对 A')`))throw Error('Efficiency comparison missing');
   if(!await js(`(()=>{const a=[...document.querySelectorAll('.challenge-comparison .garden-canvas')];return a.length===2&&a[0].dataset.playbackClock===a[1].dataset.playbackClock&&window.__challengeRuns.length===2;})()`))throw Error('Comparison clocks or execution changed');
   await click('关闭对比');await click('程序');
   await click('失败');await click('▶ 从固定初始世界执行');const failed=await waitRun(3);if(evaluateChallenge(failed)!.passed)throw Error('Failure counted as pass');
   await shot('challenge-failure');await click('挑战');await shot('challenge-history');
+  if(!await js(`(()=>{const rows=[...document.querySelectorAll('[data-score-run]')];return rows.length===3&&rows.filter(r=>r.textContent.includes('不参与排名')).length===1&&rows.filter(r=>r.textContent.includes('名')).length===3;})()`))throw Error('Session score ranking missing or failure ranked');
   await click('返回农场');await settle();if(!await js(`document.querySelector('.garden-toolbar').textContent.includes('研究 0/23')`))throw Error('Free farm not restored');
-  const report={pass:true,checks:['picker','utility execution','fixed restart after seek','key and relic replay','failure remains failure','session history','free farm restored','same clock side-by-side comparison without executing code'],baseline:evaluateChallenge(base),improved:evaluateChallenge(improved),failure:evaluateChallenge(failed)};
+  const report={pass:true,checks:['picker','utility execution','fixed restart after seek','key and relic replay','failure remains failure','session history','free farm restored','same clock side-by-side comparison without executing code','passing completion score','relative efficiency','failure excluded from session ranking'],baseline:evaluateChallenge(base),improved:evaluateChallenge(improved),failure:evaluateChallenge(failed)};
   await writeFile(path.join(dir,'challenge-ui-qa.json'),JSON.stringify(report,null,2));
 }

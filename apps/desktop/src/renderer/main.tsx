@@ -1,3 +1,4 @@
+import {BenchmarkWorkspace,type BenchmarkAPI} from './benchmark-v2';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
@@ -12,7 +13,7 @@ import {GardenWorkspace,type GardenAPI} from './garden';
 
 type FarmAPI={examples:()=>Promise<{reference:string;improved:string;runs?:Run[]}>;start:(r:unknown)=>Promise<string>;cancel:()=>Promise<void>;openCode:()=>Promise<string|null>;
   saveWorkspace:(r:unknown)=>Promise<boolean>;openWorkspace:()=>Promise<any>;openRun:()=>Promise<Run|null>;export:(arg:unknown)=>Promise<boolean>;onProgress:(fn:(p:Progress&{storageError?:string})=>void)=>()=>void};
-declare global {interface Window{farm:FarmAPI&GardenAPI;MonacoEnvironment:any}}
+declare global {interface Window{farm:FarmAPI&GardenAPI&BenchmarkAPI;MonacoEnvironment:any}}
 window.MonacoEnvironment={getWorker:()=>new EditorWorker()};
 const statusText:Record<string,string>={succeeded:'已通关',incomplete:'未完成收获',budget_exceeded:'预算耗尽',api_error:'API 错误',syntax_error:'语法错误',runtime_error:'程序异常',memory_limit:'内存超限',wall_timeout:'执行超时',recording_limit:'记录超限',cancelled:'已中止',runner_crash:'运行器退出'};
 function CodeEditor({code,onChange,readOnly}:{code:string;onChange:(s:string)=>void;readOnly:boolean}){
@@ -100,7 +101,8 @@ function App({onGarden}:{onGarden:()=>void}){
 }
 function Root(){
   const [mode,setMode]=useState<'garden'|'sort'>('garden');
+  const [scoring,setScoring]=useState(false);
   useEffect(()=>{window.farm?.gardenExamples().then(data=>{if(data.preferSort)setMode('sort');});},[]);
-  return mode==='garden'?<GardenWorkspace Editor={CodeEditor} onSort={()=>setMode('sort')}/>:<App onGarden={()=>setMode('garden')}/>;
+  return <><div style={{display:scoring?'none':undefined}}>{mode==='garden'?<GardenWorkspace Editor={CodeEditor} onSort={()=>setMode('sort')}/>:<App onGarden={()=>setMode('garden')}/>}</div>{scoring?<BenchmarkWorkspace onClose={()=>setScoring(false)}/>:<button className="score-launch" onClick={()=>setScoring(true)}>评分工作台 v2</button>}</>;
 }
 createRoot(document.getElementById('root')!).render(<Root/>);

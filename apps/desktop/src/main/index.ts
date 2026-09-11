@@ -1,3 +1,5 @@
+import {benchmarkV2QA} from './benchmark-v2-qa';
+import {benchmarkHandlers} from './benchmark-v2';
 import {app,BrowserWindow,ipcMain,dialog} from 'electron';
 import path from 'node:path';
 import {readFile,writeFile,mkdir,stat,rename} from 'node:fs/promises';
@@ -65,6 +67,8 @@ async function readBounded(file:string,max=64*1024*1024){if((await stat(file)).s
 function secureHandler(name:string,fn:(arg:any)=>unknown){ipcMain.handle(name,async(event,arg)=>{
   if(!win||event.sender!==win.webContents||event.senderFrame!==win.webContents.mainFrame)throw Error('Untrusted IPC sender');return fn(arg);
 });}
+const benchmarkV2=benchmarkHandlers(dataDir);
+for(const [name,handler] of Object.entries(benchmarkV2))secureHandler('benchmarkV2:'+name,handler);
 async function qaUtility(){
   await mkdir(qaDir(),{recursive:true});
   const source=await readFile(path.join(app.getAppPath(),'examples/reference.js'),'utf8');
@@ -231,6 +235,7 @@ app.whenReady().then(async()=>{
       const image=await win.webContents.capturePage();await writeFile(path.join(dir,`${gardenQA?'garden':renderRuns?'comparison':'desktop'}-${width}x${height}.png`),image.toPNG());
     }
     if(gardenQA&&process.argv.includes('--qa-economy-ui'))await gardenEconomyQA(win,dir);
+    if(gardenQA&&process.argv.includes('--qa-benchmark-v2'))await benchmarkV2QA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-challenge-ui'))await challengeUIQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-fleet-ui'))await fleetUIQA(win,dir);
     if(gardenQA&&process.argv.includes('--qa-lessons-ui'))await lessonUIQA(win,dir);
