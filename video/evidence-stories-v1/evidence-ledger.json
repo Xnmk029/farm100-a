@@ -1,0 +1,101 @@
+{
+  "sessionId": "f2dd6a7c-16de-42f8-8dcf-abcb592b3dc5",
+  "bundleHash": "49f0c891f990e1e09141ea3bd5a918a3e0a7f5bde28e417d4f85f0fc617528d6",
+  "archive": "F:\\benchmark\\FARM100\\artifacts\\agent-gateway\\archives\\f2dd6a7c-16de-42f8-8dcf-abcb592b3dc5\\49f0c891f990e1e09141ea3bd5a918a3e0a7f5bde28e417d4f85f0fc617528d6",
+  "identity": "Gateway self-declared; host dispatch configured gpt-6.1-sol/high",
+  "usage": null,
+  "cost": null,
+  "files": [
+    {
+      "attempt": "maze-3-1",
+      "case": "maze-3/7/1",
+      "path": "runs/maze-3-1/maze-3-7-1.json",
+      "sha256": "dc58b9750c5996705f13614a2a406a8740cedbb758ee97a1ba31f8125d249658",
+      "sourceHash": "db80ea72e48aae12e984f63e7b15cb8cb8c1e05f92df5cb1fe60441c086f5b37",
+      "eventCount": 10000,
+      "restoredTerminal": true
+    },
+    {
+      "attempt": "maze-3-2",
+      "case": "maze-3/7/1",
+      "path": "runs/maze-3-2/maze-3-7-1.json",
+      "sha256": "aa63aad6cd7e5b95e632c401927c5ce139baa1b55ee3507dc48a7974eaf4e4e1",
+      "sourceHash": "fa6675292206a94771b3ccdfb8bfbbd06b21fcaa4672a9a58bd110d8697424b0",
+      "eventCount": 516,
+      "restoredTerminal": true
+    },
+    {
+      "attempt": "fleet-harvest-1",
+      "case": "fleet-harvest/7/8",
+      "path": "runs/fleet-harvest-1/fleet-harvest-7-8.json",
+      "sha256": "dfc4afc0b21d32c6d4da143f816818d553d5cf413bc94d1779a81a13d134ddcb",
+      "sourceHash": "910c09a9f0f053818d3151428ca39bb56ea5bb9b267243b08dbbcb476f570a67",
+      "eventCount": 23999,
+      "restoredTerminal": true
+    },
+    {
+      "attempt": "fleet-harvest-2",
+      "case": "fleet-harvest/7/8",
+      "path": "runs/fleet-harvest-2/fleet-harvest-7-8.json",
+      "sha256": "51c746cf87e5af1a81c8e7b177bc32778d7ceca4692d0bd0a6b58e9cba343acf",
+      "sourceHash": "e08a08d3eaedc2d273829d68ca3aa54143dc7ae3e3b7b6f49516e20e15b04a02",
+      "eventCount": 888,
+      "restoredTerminal": true
+    }
+  ],
+  "claims": [
+    {
+      "id": "M1",
+      "type": "record",
+      "claim": "maze-3首答触发记录上限，修订seed7于1292 tick结束并通过",
+      "sources": [
+        "maze-3/7/1@maze-3-1",
+        "maze-3/7/1@maze-3-2"
+      ]
+    },
+    {
+      "id": "M2",
+      "type": "derived",
+      "claim": "首答seed7有1121次collect返回false",
+      "method": "count action=collect,value=false; exclude dispatch",
+      "sources": [
+        "maze-3-1"
+      ]
+    },
+    {
+      "id": "M3",
+      "type": "code-analysis",
+      "claim": "loot(s)会将全局keys误识别为本地物品；collect失败仍令changed=true，反复重启DFS",
+      "sources": [
+        "maze-3-1.js"
+      ],
+      "limits": "related implementation, not recorded execution-line tracing"
+    },
+    {
+      "id": "M4",
+      "type": "code-analysis",
+      "claim": "修订限制为本地loot并用collected集合去重",
+      "sources": [
+        "maze-3-2.js"
+      ]
+    },
+    {
+      "id": "F1",
+      "type": "record",
+      "claim": "fleet-harvest seed7首答8/64收获，修订64/64且172 tick结束",
+      "sources": [
+        "fleet-harvest-1",
+        "fleet-harvest-2"
+      ]
+    },
+    {
+      "id": "F2",
+      "type": "code-analysis",
+      "claim": "首答y需增加时向North移动，与坐标约定相反；修订交换South/North",
+      "sources": [
+        "fleet-harvest-1.js",
+        "fleet-harvest-2.js"
+      ]
+    }
+  ]
+}

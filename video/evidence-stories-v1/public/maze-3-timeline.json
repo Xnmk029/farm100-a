@@ -1,0 +1,50 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "totalFrames": 2760,
+  "chapters": [
+    {
+      "id": "hook",
+      "title": "收齐了，为什么还不结束？",
+      "startFrame": 0,
+      "durationFrames": 360
+    },
+    {
+      "id": "rules",
+      "title": "目标有两步：收集，再回家",
+      "startFrame": 360,
+      "durationFrames": 420
+    },
+    {
+      "id": "compare",
+      "title": "同一模拟时间，行为开始分开",
+      "startFrame": 780,
+      "durationFrames": 390
+    },
+    {
+      "id": "diagnose",
+      "title": "把“持有钥匙”当成“这里有物品”",
+      "startFrame": 1170,
+      "durationFrames": 450
+    },
+    {
+      "id": "fix",
+      "title": "修订：限定本地物品，再按坐标去重",
+      "startFrame": 1620,
+      "durationFrames": 360
+    },
+    {
+      "id": "terminal",
+      "title": "终态对照，不按播放速度判输赢",
+      "startFrame": 1980,
+      "durationFrames": 420
+    },
+    {
+      "id": "result",
+      "title": "修复的是终止条件，不是换一条捷径",
+      "startFrame": 2400,
+      "durationFrames": 360
+    }
+  ]
+}

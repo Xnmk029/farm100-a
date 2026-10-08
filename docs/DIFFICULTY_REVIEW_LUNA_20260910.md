@@ -8,7 +8,7 @@
 
 我先读取了题面、`packages/garden/economy-core.ts`、`packages/garden/runner.ts`、`packages/fleet/runner.ts`、fleet 协议/调度代码以及玩家可见 API 说明，然后让 Luna 独立编写 JavaScript 解法。没有读取 `packages/garden/challenge-examples.ts`、`scripts/lesson-solutions.ts`，也没有读取 `tests/` 下的文件或参考解。
 
-独立测试脚本位于 `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\run-benchmark.ts`。它直接调用 `executeGarden`，再用 `validateGardenRun` 重放校验，最后用 `evaluateChallenge` 读取目标、逻辑成本、tick、失败动作和终态资源。未改动引擎、题目定义、预算、目标或判定。
+独立测试脚本位于 `artifacts/difficulty-luna-20260910/run-benchmark.ts`。它直接调用 `executeGarden`，再用 `validateGardenRun` 重放校验，最后用 `evaluateChallenge` 读取目标、逻辑成本、tick、失败动作和终态资源。未改动引擎、题目定义、预算、目标或判定。
 
 需要区分三类轮次：
 
@@ -84,17 +84,17 @@
 
 主要证据位于：
 
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\final-summary.json`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\summary-round-1.json`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\summary-round-2.json`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\summary-round-3.json`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\raw\round-1-syntax-entry\`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\raw\round-1\`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\raw\round-2\`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\raw\round-3\`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\sources\`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\metrics.jsonl`
-- `F:\benchmark\FARM100\artifacts\difficulty-luna-20260910\commands.log`
+- `artifacts/difficulty-luna-20260910/final-summary.json`
+- `artifacts/difficulty-luna-20260910/summary-round-1.json`
+- `artifacts/difficulty-luna-20260910/summary-round-2.json`
+- `artifacts/difficulty-luna-20260910/summary-round-3.json`
+- `artifacts/difficulty-luna-20260910/raw\round-1-syntax-entry\`
+- `artifacts/difficulty-luna-20260910/raw\round-1\`
+- `artifacts/difficulty-luna-20260910/raw\round-2\`
+- `artifacts/difficulty-luna-20260910/raw\round-3\`
+- `artifacts/difficulty-luna-20260910/sources\`
+- `artifacts/difficulty-luna-20260910/metrics.jsonl`
+- `artifacts/difficulty-luna-20260910/commands.log`
 
 新增脚本和修订脚本为 `run-benchmark.ts`、`prepare-revision.ts`、`assemble-summary.ts`，都在上述 artifacts 目录内。`commands.log` 记录了实际调用的仓库内 `node node_modules/tsx/dist/cli.mjs` 命令；`pnpm exec tsx` 在当前 PowerShell 环境中不可用，因此没有把该环境问题误写成 runner 失败。
 

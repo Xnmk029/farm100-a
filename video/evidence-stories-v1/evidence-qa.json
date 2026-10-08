@@ -1,0 +1,38 @@
+{
+  "pass": true,
+  "at": "2026-10-04T16:27:22.310Z",
+  "sameSeedAndInitial": true,
+  "readOnlyArchiveHashes": true,
+  "snippetClaimsVerified": true,
+  "narrationFitsChapters": true,
+  "checks": [
+    {
+      "attempt": "maze-3-1",
+      "sourceHash": true,
+      "runHash": true,
+      "counts": true,
+      "movesValidated": 2180
+    },
+    {
+      "attempt": "maze-3-2",
+      "sourceHash": true,
+      "runHash": true,
+      "counts": true,
+      "movesValidated": 252
+    },
+    {
+      "attempt": "fleet-harvest-1",
+      "sourceHash": true,
+      "runHash": true,
+      "counts": true,
+      "movesValidated": 35
+    },
+    {
+      "attempt": "fleet-harvest-2",
+      "sourceHash": true,
+      "runHash": true,
+      "counts": true,
+      "movesValidated": 112
+    }
+  ]
+}

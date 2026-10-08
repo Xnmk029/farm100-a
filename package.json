@@ -1,7 +1,8 @@
 {
   "name": "farm100", "version": "0.5.4-alpha.1", "private": true, "type": "module",
-  "description": "Deterministic algorithm farm benchmark desktop client",
-  "author": "FARM100", "license": "UNLICENSED",
+  "description": "可复现的算法农场基准测试桌面客户端",
+  "author": "FARM100", "license": "GPL-3.0-only",
+  "repository": {"type": "git", "url": "https://github.com/Xnmk029/farm100-a.git"},
   "main": "dist/main.cjs", "packageManager": "pnpm@11.22.0",
   "engines": {"node": ">=24"},
   "scripts": {
@@ -13,6 +14,9 @@
     "qa:fleet": "tsx scripts/fleet-qa.ts --full",
     "qa:challenges": "tsx scripts/challenge-qa.ts --full",
     "benchmark:v2": "tsx scripts/benchmark-v2-run.ts",
+    "agent": "node scripts/farm100-agent.mjs",
+    "agent:prepare": "node scripts/farm100-agent.mjs prepare",
+    "agent:mcp": "node scripts/farm100-agent.mjs mcp",
     "score:challenges": "tsx scripts/score-challenge-suite.ts",
     "qa:economy": "tsx scripts/economy-qa.ts",
     "qa:utility": "pnpm build && electron . --qa-utility",

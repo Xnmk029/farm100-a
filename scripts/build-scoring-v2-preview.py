@@ -1,14 +1,14 @@
 from pathlib import Path
 import json, hashlib, zipfile
 root=Path.cwd()
-release=root/'release/scoring-v2-0.5.4-r2'
+release=root/'release/scoring-v2-0.5.4-r4'
 evidence=root/'artifacts/scoring-v2'
 def digest(p):
  h=hashlib.sha256()
  with p.open('rb') as f:
   for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
  return h.hexdigest()
-proof_folders=['v1-package-regression-r2-retry','ai-review-package-qa-r2']
+proof_folders=['v1-package-regression-r2-retry','astra-corrected-package-qa-r4']
 for folder in proof_folders:
  proof=json.loads((evidence/folder/'packaged-verification.json').read_text(encoding='utf-8'))
  assert proof['pass']
@@ -16,11 +16,13 @@ for folder in proof_folders:
 proof=json.loads((evidence/'evidence-verification.json').read_text(encoding='utf-8'))
 assert proof['pass'] and proof['bundleHash']==digest(evidence/'bundle.json'), 'Stale scoring evidence verification'
 files=[(release/'FARM100 Setup 0.5.4-alpha.1.exe','FARM100 Setup 0.5.4-alpha.1.exe'),(root/'docs/BENCHMARK_V2.md','使用说明.md'),(root/'docs/BENCHMARK_V2_AI_REVIEW.md','AI评审说明.md')]
-for name in ['bundle.json','manifest.json','rules.json','ledger.json','pilot.json','providers.json','paused-models.json','report.json','report.csv','validation-summary.json','AI-REVIEW-REPORT.md','review-drafts.json','SCORES.md','DIFFICULTY.md']:
+for name in ['bundle.json','manifest.json','rules.json','ledger.json','pilot.json','providers.json','paused-models.json','report.json','report.csv','projection-report.csv','validation-summary.json','AI-REVIEW-REPORT.md','review-drafts.json','SCORES.md','PROJECTION-SCORES.md','DIFFICULTY.md']:
  files.append((evidence/name,'evidence/'+name))
 for folder in ['references','runs','calls']:
  for p in sorted((evidence/folder).rglob('*')):
   if p.is_file(): files.append((p,'evidence/'+p.relative_to(evidence).as_posix()))
+for p in sorted((evidence/'projections').rglob('*')):
+ if p.is_file(): files.append((p,'evidence/'+p.relative_to(evidence).as_posix()))
 files.append((evidence/'evidence-verification.json','verification/evidence-verification.json'))
 for folder in proof_folders:
  files.append((evidence/folder/'packaged-verification.json','verification/'+folder+'.json'))

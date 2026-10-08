@@ -12,6 +12,13 @@ const root=path.resolve('artifacts/scoring-v2');await mkdir(root,{recursive:true
 const ledger:any[]=await readFile(path.join(root,'ledger.json'),'utf8').then(JSON.parse).catch(missingOnly([]));
 const providers=await providerInventory();await writeJSON(path.join(root,'providers.json'),providers);
 const outputInstruction='Return ONLY one JSON object with string fields source, strategy, correctness, complexity, boundaries. source is executable synchronous JavaScript, no async/await, no imports, no external tools. The other fields are concise algorithm summaries, not private chain-of-thought. Do not use tools or read files.';
+const LESSON_LIMITS:Record<string,string>={
+ 'lesson-condition':'Hard check: finish within 50 ticks.',
+ 'lesson-wait':'Hard check: finish within 180 ticks.',
+ 'lesson-memory':'Hard check: harvest exactly two mature crops, print 2 as the final log, and finish within 60 ticks.',
+ 'lesson-path':'Hard check: use no more than 15 move calls.',
+ 'lesson-schedule':'Hard check: harvest all 16 crops with no wait() calls and finish within 560 ticks.'
+};
 const pilotFile=path.join(root,'pilot.json');
 if(process.argv.includes('--pilot')){
  const rows:any[]=[];const requested=process.argv.find(a=>a.startsWith('--model='))?.slice(8);if(requested&&!CANDIDATES.includes(requested))throw Error('未知模型');
@@ -40,7 +47,7 @@ if(process.argv.includes('--pilot')){
    guide+='Crop rules: '+JSON.stringify(CROP_CONTENT)+'\nRecipes: '+JSON.stringify(RECIPE_BY_ID)+'\nResearch: '+JSON.stringify(TECH_BY_ID)+'\n';
    if(task.module==='challenge')guide+='Allowed APIs (plus fleet APIs when deployed): '+CHALLENGE_BY_ID[task.id].allowed.join(',')+'\nsense() reveals local exits and loot only, collect() takes key/relic; key unlocks gates. swap(direction) exchanges adjacent crop traits. Cactus harvest succeeds as an entire connected mature component only when all rows/columns are nondecreasing; pumpkin at even x,y merges mature 2x2.\n';
   }
-  return outputInstruction+'\nTask: '+task.name+'\n'+task.description+'\n'+guide+'\nEvaluation: same source tested on fixed undisclosed seeds; do not hardcode the map. Configurations: '+JSON.stringify(task.cases.map(c=>({size:c.config.size,budget:c.config.budget,drones:c.config.drones??1})))+'\nSupply a self-contained solution and concise design explanation.';
+  return outputInstruction+'\nTask: '+task.name+'\n'+task.description+'\n'+(LESSON_LIMITS[task.id]??'')+'\n'+guide+'\nEvaluation: same source tested on fixed undisclosed seeds; do not hardcode the map. Configurations: '+JSON.stringify(task.cases.map(c=>({size:c.config.size,budget:c.config.budget,drones:c.config.drones??1})))+'\nSupply a self-contained solution and concise design explanation.';
  }
  modelLoop: for(const model of models)for(const task of TASKS){
   for(const round of [1,2] as const){
@@ -51,7 +58,7 @@ if(process.argv.includes('--pilot')){
    const attempt:Attempt={id,taskId:task.id,model,round,status:'infrastructure_error',cases:[],call:{}};
    try{
     let prompt=await promptFor(task);
-    if(round===2)prompt+='\nPrevious submission:\n'+JSON.stringify(first!.answer)+'\nActual feedback:\n'+JSON.stringify(first!.cases.map(c=>({id:c.id,passed:c.passed,completion:c.completion,reason:c.reason,checks:c.checks})))+'\n'+(first!.error??'')+'\nYou have one revision. Return the same JSON format.';
+    if(round===2){const previous=first!.answer?JSON.stringify(first!.answer):(first!.rawSubmission??'No parseable previous submission');prompt+='\nPrevious submission:\n'+previous+'\nActual feedback:\n'+JSON.stringify(first!.cases.map(c=>({id:c.id,passed:c.passed,completion:c.completion,reason:c.reason,checks:c.checks})))+'\n'+(first!.error??'')+'\nYou have one revision. Return the same JSON format.';}
     const response=await callModel(model,prompt,root,id+'-'+Date.now(),ledger,pilot.find((p:any)=>p.model===model)?.metadata?.route??'go');attempt.call=response.metadata;
     try{attempt.answer=AnswerSchema.parse(JSON.parse(response.content.replace(/^```(?:json)?\s*|\s*```$/g,'')));}catch(e){attempt.status='submission_error';attempt.rawSubmission=response.content.slice(0,100000);attempt.error='Invalid submission JSON: '+String(e);}
     if(attempt.answer){

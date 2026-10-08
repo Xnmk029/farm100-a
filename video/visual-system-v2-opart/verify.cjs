@@ -1,0 +1,10 @@
+const {spawnSync}=require('node:child_process'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+const out=path.join(__dirname,'output'),file=path.join(out,'farm100-pixel-opart-v21.mp4');
+const run=(cmd,args)=>{const r=spawnSync(cmd,args,{encoding:'utf8',windowsHide:true,maxBuffer:8e6});assert.equal(r.status,0,r.stderr||String(r.error));return r.stdout};
+const probe=JSON.parse(run('ffprobe',['-v','error','-count_frames','-show_streams','-show_format','-of','json',file])),v=probe.streams.find(s=>s.codec_type==='video');
+assert.equal(v.width,1920);assert.equal(v.height,1080);assert.equal(v.r_frame_rate,'60/1');assert.equal(+v.nb_read_frames,1080);assert.equal(+probe.format.duration,18);assert.equal(v.pix_fmt,'yuv420p');
+run('ffmpeg',['-v','error','-xerror','-i',file,'-c:v','rawvideo','-f','null','-']);
+fs.mkdirSync(path.join(out,'decoded'),{recursive:true});const times=[.8,2.2,4,6.9,8.6,10.5,12.5,15.3,17.5];
+for(let i=0;i<times.length;i++)run('ffmpeg',['-y','-v','error','-ss',String(times[i]),'-i',file,'-frames:v','1',path.join(out,'decoded',String(i).padStart(2,'0')+'.png')]);
+const bytes=fs.readFileSync(file),result={pass:true,durationSeconds:18,width:1920,height:1080,fps:60,frames:1080,fullDecode:true,codec:v.codec_name,audio:probe.streams.some(s=>s.codec_type==='audio'),bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),sampleSeconds:times};
+fs.writeFileSync(path.join(out,'media-qa.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));

@@ -17,6 +17,22 @@ async function evidenceFile(root:string,relative:string){
 export async function validateBundle(raw:unknown,root:string):Promise<Bundle>{
  const b=z.object({version:z.literal(BENCHMARK_VERSION),manifest:z.any(),models:z.array(z.string().min(1).max(100)).max(3),attempts:z.array(z.any()).max(186),reviews:z.array(z.any()).max(10000),ledger:z.array(z.any()).max(1000),providers:z.array(z.any()).max(100)}).parse(raw) as Bundle;
  budgetReservation(b.ledger,0);if(new Set(b.models).size!==b.models.length)throw Error('重复模型');
+ const ledgerById=new Map<string,any>();
+ for(const entry of b.ledger){
+  const checked=z.object({id:z.string().min(1),model:z.string().min(1),evidence:z.string().min(1).optional(),reserved:z.number().finite().nonnegative(),charged:z.number().finite().nonnegative().optional()}).passthrough().parse(entry);
+  if(ledgerById.has(checked.id))throw Error('重复账本记录');ledgerById.set(checked.id,checked);
+  if(checked.billing==='grok-build-subscription-or-metered'){
+   if(!checked.evidence)throw Error('Grok 账本缺少调用证据');
+   let request:any;
+   try{request=JSON.parse(await bounded(await evidenceFile(root,checked.evidence+'/request.json')));}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT'&&checked.status==='infrastructure_error'&&checked.costStatus==='unknown; full reservation retained'&&checked.reserved>0&&checked.charged===undefined&&checked.reportedCostUsd===undefined)continue;throw error;}
+   const expectedReserved=((16000+Math.ceil(Buffer.byteLength(request.prompt)/4))*2+6000*6)/1e6*10;
+   if(request.model!==checked.model||request.sha256!==hash(request.prompt)||checked.cnyPerUsdCeiling!==10||checked.inputPrice!==2||checked.outputPrice!==6||Math.abs(checked.reserved-expectedReserved)>1e-12)throw Error('Grok 预留费用与请求证据不一致');
+   if(checked.status==='completed'){
+    const response=JSON.parse(await bounded(await evidenceFile(root,checked.evidence+'/response-normalized.json'))),rawResponse=JSON.parse(await bounded(await evidenceFile(root,checked.evidence+'/stdout.txt'))),cost=rawResponse.total_cost_usd;
+    if(Object.keys(rawResponse.modelUsage??{})[0]!==checked.model||String(rawResponse.text??'').trim()!==String(response.content??'').trim()||canonical(rawResponse.usage??null)!==canonical(response.usage??null)||canonical(cost??null)!==canonical(response.totalCostUsd??null)||!Number.isFinite(cost)||checked.reportedCostUsd!==cost||typeof checked.charged!=='number'||!Number.isFinite(checked.charged)||Math.abs(checked.charged-cost*10)>1e-12)throw Error('Grok 费用与原始响应不一致');
+   }else if(checked.charged!==undefined||checked.reportedCostUsd!==undefined)throw Error('未完成的 Grok 调用不能确认费用');
+  }
+ }
  const {hash:expected,...body}=b.manifest;if(expected!==hash(canonical(body))||canonical(body.tasks)!==canonical(TASKS))throw Error('清单哈希或题目规则不匹配');
  for(const task of TASKS)for(const spec of task.cases){const ref=b.manifest.references[spec.id];if(!ref)throw Error('缺少冻结参考');const text=await bounded(await evidenceFile(root,ref.file));if(hash(text)!==ref.recordHash)throw Error('参考记录已变更');const run=JSON.parse(text);if(hash(run.source)!==ref.sourceHash)throw Error('参考源码哈希不同');const result=assess(task,spec,run,ref.primary,ref.file);if(!result.passed||result.primary!==ref.primary)throw Error('参考成绩不成立');}
  const ids=new Set<string>(),slots=new Set<string>();
@@ -25,7 +41,20 @@ export async function validateBundle(raw:unknown,root:string):Promise<Bundle>{
   const task=TASKS.find(t=>t.id===a.taskId);const slot=a.model+'/'+a.taskId+'/'+a.round;
   if(!task||!b.models.includes(a.model)||ids.has(a.id)||slots.has(slot))throw Error('未知或重复提交');ids.add(a.id);slots.add(slot);
   if(a.answer){a.answer=AnswerSchema.parse(a.answer);if(hash(a.answer.source)!==a.sourceHash)throw Error('源码哈希不同');}
-  if(a.status!=='infrastructure_error'){if(!a.call?.evidence||a.call.actualModel!==a.model)throw Error('模型调用证据缺失');const response=JSON.parse(await bounded(await evidenceFile(root,a.call.evidence+'/response-normalized.json')));const request=JSON.parse(await bounded(await evidenceFile(root,a.call.evidence+'/request.json')));if(request.model!==a.model||request.sha256!==hash(request.prompt)||response.model!==a.model)throw Error('调用模型或请求哈希不同');const content=response.content??response.choices?.[0]?.message?.content;if(a.answer){const submitted=AnswerSchema.parse(JSON.parse(content.replace(/^```(?:json)?\s*|\s*```$/g,'')));if(canonical(submitted)!==canonical(a.answer))throw Error('响应与提交不同');}}
+  if(a.status!=='infrastructure_error'){
+   if(!a.call?.id||!a.call?.evidence||a.call.actualModel!==a.model)throw Error('模型调用证据缺失');
+   const ledger=ledgerById.get(a.call.id);if(!ledger)throw Error('提交缺少对应账本记录');
+   if((ledger.evidence??'calls/'+ledger.id)!==a.call.evidence)throw Error('提交调用与账本记录不一致');
+   for(const key of ['model','reserved','charged','billing','route','actualModel','reportedCostUsd','usage','cnyPerUsdCeiling','inputPrice','outputPrice','priceSource','additionalRmb','status'] as const)if(canonical(ledger[key]??null)!==canonical(a.call[key]??null))throw Error('提交调用与账本记录不一致');
+   const response=JSON.parse(await bounded(await evidenceFile(root,a.call.evidence+'/response-normalized.json')));const request=JSON.parse(await bounded(await evidenceFile(root,a.call.evidence+'/request.json')));if(request.model!==a.model||request.sha256!==hash(request.prompt)||response.model!==a.model)throw Error('调用模型或请求哈希不同');
+   if(ledger.billing==='codex-subscription'){if(ledger.reserved!==0||ledger.charged!==undefined||ledger.reportedCostUsd!==undefined)throw Error('订阅调用费用记录不一致');}
+   if(ledger.billing==='grok-build-subscription-or-metered'){
+    const rawResponse=JSON.parse(await bounded(await evidenceFile(root,a.call.evidence+'/stdout.txt'))),cost=rawResponse.total_cost_usd;
+    if(Object.keys(rawResponse.modelUsage??{})[0]!==a.model||String(rawResponse.text??'').trim()!==String(response.content??'').trim()||canonical(rawResponse.usage??null)!==canonical(response.usage??null)||canonical(cost??null)!==canonical(response.totalCostUsd??null))throw Error('Grok 原始响应与标准化证据不一致');
+    if(!Number.isFinite(cost)||ledger.reportedCostUsd!==cost||!Number.isFinite(ledger.charged)||Math.abs(ledger.charged-cost*10)>1e-12)throw Error('Grok 费用与原始响应不一致');
+   }
+   const content=response.content??response.choices?.[0]?.message?.content;if(a.answer){const submitted=AnswerSchema.parse(JSON.parse(content.replace(/^```(?:json)?\s*|\s*```$/g,'')));if(canonical(submitted)!==canonical(a.answer))throw Error('响应与提交不同');}
+  }
   if(a.status==='evaluated'||a.cases.length){
    if(!a.answer||(a.status==='evaluated'&&a.cases.length!==task.cases.length))throw Error('执行证据不完整');
    const seen=new Set<string>();

@@ -4,23 +4,26 @@ import os from 'node:os';
 import {spawn} from 'node:child_process';
 import {budgetReservation} from '../packages/benchmark-v2/scoring';
 import {writeJSON,sha} from './benchmark-v2-engine';
-export const CANDIDATES=['gpt-5.3-codex-spark','gpt-5.6-luna'];
+export const CANDIDATES=['gpt-5.3-codex-spark','gpt-5.6-luna','grok-4.6-build'];
 export const BILLING_SOURCE='https://opencode.ai/v2/docs/console/go';
+let ledgerWriteTail=Promise.resolve();
+function persistLedger(file:string,ledger:any[]){ledgerWriteTail=ledgerWriteTail.then(()=>writeJSON(file,ledger));return ledgerWriteTail;}
 export async function providerInventory(){
  const config=JSON.parse(await readFile(path.join(os.homedir(),'.pi/agent/models.json'),'utf8'));
- return Object.entries(config.providers).map(([id,v]:[string,any])=>({id,endpoint:new URL(v.baseUrl??'http://unknown').origin+new URL(v.baseUrl??'http://unknown').pathname,credentialPresent:!!v.apiKey,source:'~/.pi/agent/models.json',selected:id==='opencode-go',note:id==='scnet'?'套餐不用于非交互式批量调用':id==='opencode-go'?'Go 支持API；可能使用余额，按公开价预留费用':'本轮未纳入，未确认计费或不需要更多模型'}));
+ return [...Object.entries(config.providers).map(([id,v]:[string,any])=>({id,endpoint:new URL(v.baseUrl??'http://unknown').origin+new URL(v.baseUrl??'http://unknown').pathname,credentialPresent:!!v.apiKey,source:'~/.pi/agent/models.json',selected:id==='opencode-go',note:id==='scnet'?'套餐不用于非交互式批量调用':id==='opencode-go'?'Go 支持API；可能使用余额，按公开价预留费用':'本轮未纳入，未确认计费或不需要更多模型'})),{id:'grok-build',endpoint:'https://cli-chat-proxy.grok.com/v1',credentialPresent:true,source:'Grok Build CLI OAuth（仅调用，不导出凭据）',selected:true,note:'请求别名 grok-4.6；真实身份由 CLI modelUsage 验证为 grok-4.6-build'}];
 }
 export async function callModel(model:string,prompt:string,root:string,id:string,ledger:any[],route:'go'|'deepseek'='go'){
  if(!CANDIDATES.includes(model))throw Error('模型未获准');
  if(Buffer.byteLength(prompt)>60000)throw Error('Prompt exceeds fixed input bound');
  const dir=path.join(root,'calls',id);await mkdir(dir,{recursive:true});
- const native=['gpt-5.3-codex-spark','gpt-5.6-luna'].includes(model);const effort=model==='gpt-5.6-luna'?'max':'medium';
- if(native){const auth=JSON.parse(await readFile(path.join(os.homedir(),'.codex/auth.json'),'utf8'));if(auth.auth_mode!=='chatgpt')throw Error('Spark 非订阅登录，费用未知');}
+ const native=['gpt-5.3-codex-spark','gpt-5.6-luna'].includes(model),grok=model==='grok-4.6-build';const effort=model==='gpt-5.6-luna'?'max':grok?'high':'medium';
+ if(native){const auth=JSON.parse(await readFile(path.join(os.homedir(),'.codex/auth.json'),'utf8'));if(auth.auth_mode!=='chatgpt')throw Error('Codex 非订阅登录，费用未知');}
  // 10 CNY/USD is an explicit conservative ceiling, not a claimed exchange rate or bill.
- const inputPrice=route==='deepseek'?.44:.14,outputPrice=route==='deepseek'?1.32:.28;
- const reservation=budgetReservation(ledger,native?0:(Buffer.byteLength(prompt)*inputPrice+6000*outputPrice)/1e6*10);
- const entry:any={id,model,evidence:'calls/'+id,startedAt:new Date().toISOString(),reserved:reservation,billing:native?'codex-subscription':route==='deepseek'?'metered':'go-subscription-or-balance',route:native?'codex-cli':route,inputPrice:native?null:inputPrice,outputPrice:native?null:outputPrice,additionalRmb:null,cnyPerUsdCeiling:10,priceSource:native?'local auth_mode=chatgpt':route==='deepseek'?'https://api-docs.deepseek.com/quick_start/pricing/':BILLING_SOURCE};ledger.push(entry);await writeJSON(path.join(root,'ledger.json'),ledger);
- await writeJSON(path.join(dir,'request.json'),{model,prompt,maxOutputTokens:native?null:6000,reasoning:native?effort:'provider-default',sha256:sha(prompt)});
+ const inputPrice=grok?2:route==='deepseek'?.44:.14,outputPrice=grok?6:route==='deepseek'?1.32:.28;
+ const grokInputEstimate=16000+Math.ceil(Buffer.byteLength(prompt)/4);
+ const reservation=budgetReservation(ledger,native?0:grok?(grokInputEstimate*inputPrice+6000*outputPrice)/1e6*10:(Buffer.byteLength(prompt)*inputPrice+6000*outputPrice)/1e6*10);
+ const entry:any={id,model,evidence:'calls/'+id,startedAt:new Date().toISOString(),reserved:reservation,billing:native?'codex-subscription':grok?'grok-build-subscription-or-metered':route==='deepseek'?'metered':'go-subscription-or-balance',route:native?'codex-cli':grok?'grok-build-cli':route,inputPrice:native?null:inputPrice,outputPrice:native?null:outputPrice,additionalRmb:null,cnyPerUsdCeiling:10,priceSource:native?'local auth_mode=chatgpt':grok?'Grok Build CLI reported cost; conservative reservation uses cached catalog USD 2/M input, 6/M output':route==='deepseek'?'https://api-docs.deepseek.com/quick_start/pricing/':BILLING_SOURCE};ledger.push(entry);await persistLedger(path.join(root,'ledger.json'),ledger);
+ await writeJSON(path.join(dir,'request.json'),{model,prompt,requestedModel:grok?'grok-4.6':model,maxOutputTokens:native||grok?null:6000,reasoning:native||grok?effort:'provider-default',sha256:sha(prompt)});
  try{
   let content='',response:any,actualModel:string|undefined;
   if(native){
@@ -33,6 +36,23 @@ export async function callModel(model:string,prompt:string,root:string,id:string
    actualModel=stderr.match(/^model:\s*(\S+)/m)?.[1];if(code!==0)throw Error(/usage limit|quota/i.test(stderr)?'quota_exhausted: Codex model usage limit':'Codex failed: '+String(code));
    if(actualModel!==model)throw Error('CLI 模型身份未确认或不同');
    content=stdout.trim();response={model:actualModel,identitySource:'Codex runtime banner',usage:{reportedTotal:stderr.match(/tokens used\s+([\d,]+)/)?.[1]??null},content};
+  }else if(grok){
+   const isolated=path.join(root,'isolated',id);await mkdir(isolated,{recursive:true});
+   const promptFile=path.join(dir,'prompt.txt');await writeFile(promptFile,prompt);
+   const executable=path.join(os.homedir(),'.grok','bin','grok.exe');
+   const args=['--cwd',isolated,'--model','grok-4.6','--reasoning-effort','high','--no-subagents','--disable-web-search','--max-turns','1','--output-format','json','--verbatim','--system-prompt-override','Follow the user prompt. Do not use tools. Return only the requested JSON.','--prompt-file',path.resolve(promptFile)];
+   const env={...process.env,HTTP_PROXY:'http://127.0.0.1:10351',HTTPS_PROXY:'http://127.0.0.1:10351'};
+   const child=spawn(executable,args,{windowsHide:true,env,stdio:['ignore','pipe','pipe']});let stdout='',stderr='';
+   child.stdout.on('data',c=>stdout+=c);child.stderr.on('data',c=>stderr+=c);
+   const timer=setTimeout(()=>child.kill(),600000);const code=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',resolve);}).finally(()=>clearTimeout(timer));
+   await writeFile(path.join(dir,'stdout.txt'),stdout);await writeFile(path.join(dir,'stderr.txt'),stderr);
+   if(code!==0)throw Error(/limit|quota|rate/i.test(stderr+stdout)?'quota_exhausted: Grok Build usage limit':'Grok Build failed: '+String(code));
+   const raw=JSON.parse(stdout);actualModel=Object.keys(raw.modelUsage??{})[0];
+   if(actualModel!==model)throw Error('Grok Build CLI 模型身份未确认或不同：'+String(actualModel));
+   content=String(raw.text??'').trim();
+   response={model:actualModel,requestedModel:'grok-4.6',identitySource:'Grok Build CLI modelUsage',usage:raw.usage??null,totalCostUsd:raw.total_cost_usd??null,requestId:raw.requestId??null,content};
+   entry.usage=raw.usage??null;entry.reportedCostUsd=raw.total_cost_usd??null;
+   if(Number.isFinite(raw.total_cost_usd)){entry.charged=raw.total_cost_usd*10;entry.chargedMeaning='CLI报告美元成本按10元/美元折算的人民币上界';if(entry.charged>reservation)throw Error('Grok Build 报告成本超出预留边界，暂停后续调用');}
   }else{
    const config=JSON.parse(await readFile(path.join(os.homedir(),'.pi/agent/models.json'),'utf8')).providers[route==='deepseek'?'DeepSeek':'opencode-go'];
    if(config.baseUrl!==(route==='deepseek'?'https://api.deepseek.com/v1':'https://opencode.ai/zen/go/v1')||typeof config.apiKey!=='string'||!config.apiKey)throw Error('套餐配置缺失或端点不匹配');
@@ -50,7 +70,7 @@ export async function callModel(model:string,prompt:string,root:string,id:string
    }
   }
   entry.usage=response.usage??null;entry.actualModel=actualModel;entry.durationMs=Date.now()-Date.parse(entry.startedAt);entry.finishedAt=new Date().toISOString();entry.status='completed';
-  await writeJSON(path.join(dir,'response-normalized.json'),response);await writeJSON(path.join(root,'ledger.json'),ledger);
+  await writeJSON(path.join(dir,'response-normalized.json'),response);await persistLedger(path.join(root,'ledger.json'),ledger);
   return {content,metadata:{...entry,evidence:'calls/'+id}};
- }catch(error){entry.durationMs=Date.now()-Date.parse(entry.startedAt);entry.finishedAt=new Date().toISOString();entry.status='infrastructure_error';entry.error=String(error);await writeJSON(path.join(root,'ledger.json'),ledger);throw error;}
+ }catch(error){entry.durationMs=Date.now()-Date.parse(entry.startedAt);entry.finishedAt=new Date().toISOString();entry.status='infrastructure_error';entry.error=String(error);await persistLedger(path.join(root,'ledger.json'),ledger);throw error;}
 }

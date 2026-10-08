@@ -1,0 +1,1 @@
+const n=get_size(),id=get_drone_id(),d=get_drone_count();function go(x,y){let p=get_position();while(p.x<x){move(East);p=get_position();}while(p.x>x){move(West);p=get_position();}while(p.y<y){move(North);p=get_position();}while(p.y>y){move(South);p=get_position();}}for(let y=id;y<n;y+=d){for(let j=0;j<n;j++){let x=y%2?n-1-j:j;go(x,y);if(inspect().ready)harvest();}}

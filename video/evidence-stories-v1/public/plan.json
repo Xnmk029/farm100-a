@@ -1,0 +1,167 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "stories": [
+    {
+      "id": "maze-3",
+      "title": "收齐了，为什么还不结束？",
+      "eyebrow": "01 / MAZE · 首答 → 修订",
+      "goal": "收集 3 件遗物，并返回起点",
+      "chapters": [
+        {
+          "id": "hook",
+          "seconds": 12,
+          "title": "收齐了，为什么还不结束？",
+          "narration": "这份程序已经收齐三件遗物，却还在迷宫里反复走。问题出在它如何判断：还有没有新东西。",
+          "audioSeconds": 9.855692,
+          "startFrame": 0,
+          "durationFrames": 360,
+          "audioStart": 0.6
+        },
+        {
+          "id": "rules",
+          "seconds": 14,
+          "title": "目标有两步：收集，再回家",
+          "narration": "这是同一个种子下的两次提交。目标是收集三件遗物并返回起点。画面重建归档事件，不是模型实时思考。",
+          "audioSeconds": 11.603946,
+          "startFrame": 360,
+          "durationFrames": 420,
+          "audioStart": 12.6
+        },
+        {
+          "id": "compare",
+          "seconds": 13,
+          "title": "同一模拟时间，行为开始分开",
+          "narration": "两边使用同一个模拟时钟。修订版正常收集并回家。首答在拿到钥匙后，开始对空位置重复执行收集。",
+          "audioSeconds": 11.231837,
+          "startFrame": 780,
+          "durationFrames": 390,
+          "audioStart": 26.6
+        },
+        {
+          "id": "diagnose",
+          "seconds": 15,
+          "title": "把“持有钥匙”当成“这里有物品”",
+          "narration": "感知结果里，钥匙数量是全局状态。首答却把整个对象交给物品判断。即使收集失败，也会宣布有变化，重新遍历。",
+          "audioSeconds": 12.710068,
+          "startFrame": 1170,
+          "durationFrames": 450,
+          "audioStart": 39.6
+        },
+        {
+          "id": "fix",
+          "seconds": 12,
+          "title": "修订：限定本地物品，再按坐标去重",
+          "narration": "修订只检查当前位置的物品，再记住已收集的坐标。没有新物品的一轮结束后，循环终于能够退出。",
+          "audioSeconds": 10.178367,
+          "startFrame": 1620,
+          "durationFrames": 360,
+          "audioStart": 54.6
+        },
+        {
+          "id": "terminal",
+          "seconds": 14,
+          "title": "终态对照，不按播放速度判输赢",
+          "narration": "首答累计一千一百二十一次无效收集，触发记录上限。修订在一千二百九十二个模拟时刻结束，三个种子全部通过。",
+          "audioSeconds": 11.548073,
+          "startFrame": 1980,
+          "durationFrames": 420,
+          "audioStart": 66.6
+        },
+        {
+          "id": "result",
+          "seconds": 12,
+          "title": "修复的是终止条件，不是换一条捷径",
+          "narration": "这说明本次修订解决了终止问题。它仍不等于最优路径，更不能由一个案例推断模型的全部能力。",
+          "audioSeconds": 9.661451,
+          "startFrame": 2400,
+          "durationFrames": 360,
+          "audioStart": 80.6
+        }
+      ],
+      "totalFrames": 2760,
+      "seconds": 92
+    },
+    {
+      "id": "fleet-harvest",
+      "title": "八台机器，为何只收了一行？",
+      "eyebrow": "02 / FLEET · 同模板复用",
+      "goal": "8 台无人机，收获 64 株成熟小麦",
+      "chapters": [
+        {
+          "id": "hook",
+          "seconds": 11,
+          "title": "八台机器，为何只收了一行？",
+          "narration": "同样分配了八台无人机，首答却只收获一行。分工看似合理，执行方向却写反了。",
+          "audioSeconds": 9.019773,
+          "startFrame": 0,
+          "durationFrames": 330,
+          "audioStart": 0.6
+        },
+        {
+          "id": "rules",
+          "seconds": 14,
+          "title": "每台负责一行，世界坐标向下增加",
+          "narration": "任务是收完八乘八的成熟麦田。每台机器按编号负责一行。这里展示的是程序多机控制，不是八个模型协作。",
+          "audioSeconds": 11.578503,
+          "startFrame": 330,
+          "durationFrames": 420,
+          "audioStart": 11.6
+        },
+        {
+          "id": "compare",
+          "seconds": 13,
+          "title": "同一时钟：七台困在最北侧",
+          "narration": "对齐模拟时间后，修订版逐行展开。首答只有零号能收获；其他机器想向下走，却持续尝试向北越界。",
+          "audioSeconds": 11.244218,
+          "startFrame": 750,
+          "durationFrames": 390,
+          "audioStart": 25.6
+        },
+        {
+          "id": "diagnose",
+          "seconds": 13,
+          "title": "目标 y 更大，代码却调用 North",
+          "narration": "坐标越往南越大。首答在当前纵坐标小于目标时调用向北移动。位置没有改变，循环条件也就一直成立。",
+          "audioSeconds": 11.177551,
+          "startFrame": 1140,
+          "durationFrames": 390,
+          "audioStart": 38.6
+        },
+        {
+          "id": "fix",
+          "seconds": 12,
+          "title": "只纠正方向，保留原来的分工",
+          "narration": "修订交换了南北方向，保留原来的分行策略。八台机器各收八株，分工这才真正落实到执行。",
+          "audioSeconds": 9.91356,
+          "startFrame": 1530,
+          "durationFrames": 360,
+          "audioStart": 51.6
+        },
+        {
+          "id": "terminal",
+          "seconds": 13,
+          "title": "同为 8 台机器，产出从 8 到 64",
+          "narration": "首答有五千九百三十六次失败移动，最后超出预算。修订用一百七十二个模拟时刻完成，三个种子全部通过。",
+          "audioSeconds": 11.057188,
+          "startFrame": 1890,
+          "durationFrames": 390,
+          "audioStart": 63.6
+        },
+        {
+          "id": "result",
+          "seconds": 12,
+          "title": "区分策略设计与实现错误",
+          "narration": "这次失败来自方向实现，不能直接归因为分工算法无效。看代码，也看真正发生过的动作。",
+          "audioSeconds": 9.42839,
+          "startFrame": 2280,
+          "durationFrames": 360,
+          "audioStart": 76.6
+        }
+      ],
+      "totalFrames": 2640,
+      "seconds": 88
+    }
+  ]
+}

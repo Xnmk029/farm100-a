@@ -1,0 +1,50 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "totalFrames": 2640,
+  "chapters": [
+    {
+      "id": "hook",
+      "title": "八台机器，为何只收了一行？",
+      "startFrame": 0,
+      "durationFrames": 330
+    },
+    {
+      "id": "rules",
+      "title": "每台负责一行，世界坐标向下增加",
+      "startFrame": 330,
+      "durationFrames": 420
+    },
+    {
+      "id": "compare",
+      "title": "同一时钟：七台困在最北侧",
+      "startFrame": 750,
+      "durationFrames": 390
+    },
+    {
+      "id": "diagnose",
+      "title": "目标 y 更大，代码却调用 North",
+      "startFrame": 1140,
+      "durationFrames": 390
+    },
+    {
+      "id": "fix",
+      "title": "只纠正方向，保留原来的分工",
+      "startFrame": 1530,
+      "durationFrames": 360
+    },
+    {
+      "id": "terminal",
+      "title": "同为 8 台机器，产出从 8 到 64",
+      "startFrame": 1890,
+      "durationFrames": 390
+    },
+    {
+      "id": "result",
+      "title": "区分策略设计与实现错误",
+      "startFrame": 2280,
+      "durationFrames": 360
+    }
+  ]
+}

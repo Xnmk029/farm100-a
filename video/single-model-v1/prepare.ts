@@ -1,0 +1,38 @@
+import {readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {leaderboard} from '../../packages/benchmark-v2/scoring';
+import {TASKS} from '../../packages/benchmark-v2/catalog';
+const dir=path.resolve('video/single-model-v1'),publicDir=path.join(dir,'public');
+await mkdir(publicDir,{recursive:true});
+const id='e4258be9-d9f0-4fa8-9a6c-4537490e2d19';
+const registry=JSON.parse(await readFile('artifacts/agent-gateway/registry.json','utf8'));
+const entry=registry.filter((r:any)=>r.sessionId===id).at(-1);assert(entry);
+const base=entry.directory,raw=await readFile(path.join(base,'bundle.json'),'utf8');
+const hash=(v:string)=>createHash('sha256').update(v).digest('hex');assert.equal(hash(raw),entry.bundleHash);
+const b=JSON.parse(raw),lb=leaderboard(b,2)[0];
+const chosen=TASKS.map(t=>b.attempts.find((a:any)=>a.taskId===t.id&&a.round===2)??b.attempts.find((a:any)=>a.taskId===t.id&&a.round===1));
+const a=b.attempts.find((a:any)=>a.taskId==='fleet-repair');
+const c=a.cases[0],run=JSON.parse(await readFile(path.join(base,c.evidence),'utf8'));
+const failed=chosen.find(a=>a.taskId==='maze-3');
+const bad=JSON.parse(await readFile(path.join(base,failed.cases[0].evidence),'utf8'));
+assert.equal(run.result.state.tick,919);assert.equal(bad.events.length,0);assert.equal(bad.result.state.tick,0);
+const actorStats=Array.from({length:4},(_,id)=>{
+ const ee=run.events.filter((e:any)=>e.actor===id&&e.kind==='complete'),counts:Record<string,number>={};
+ for(const e of ee)counts[e.action]=(counts[e.action]??0)+1;
+ return {id,counts,failures:ee.filter((e:any)=>e.value===false).length,repair:ee.filter((e:any)=>e.action==='repair'&&e.value!==false).length,harvest:ee.filter((e:any)=>e.action==='harvest'&&e.value!==false).length};
+});
+assert.equal(actorStats.reduce((s,a)=>s+a.repair,0),run.result.state.economy.counters.repair);
+assert.equal(actorStats.reduce((s,a)=>s+a.harvest,0),run.result.state.economy.counters.harvest);
+const groups=[['fleet','多机协作'],['farm','种植生产'],['layout','空间布局'],['schedule','时序调度'],['sort','作物排序'],['maze','迷宫探索'],['lesson','教学任务'],['legacy','标准排序']].map(([prefix,name])=>{
+ const rows=lb.tasks.filter(t=>t.taskId.startsWith(prefix+'-'));
+ return {prefix,name,total:rows.length,passed:rows.filter(t=>t.passed).length,ids:rows.map(t=>t.taskId)};
+});
+const data={model:'GLM-5.3',agent:'ZCode',reasoning:'最高（自报）',sessionId:id,bundleHash:entry.bundleHash,objective:lb.objective,manual:lb.total!-lb.objective!,total:lb.total,coverage:lb.coverage,passedCases:chosen.flatMap(a=>a.cases).filter(c=>c.passed).length,passedTasks:lb.tasks.filter(t=>t.passed).length,groups,tasks:lb.tasks.map(t=>({...t,name:TASKS.find(x=>x.id===t.taskId)!.name})),run,case:c,actorStats,error:{source:failed.answer.source,caseIds:failed.cases.map((c:any)=>c.id),reason:bad.result.reason,message:bad.result.message,initial:bad.initial,completion:failed.cases[0].completion},failures:run.events.filter((e:any)=>e.value===false).length};
+await writeFile(path.join(publicDir,'data.json'),JSON.stringify(data));
+const secs=[0,6,17,24,48,58,65,72],labels=['开场定位','具体跑分','题目覆盖','能力案例','错题定位','指标解释','结论与证据'];
+const timeline={fps:30,width:1920,height:1080,totalFrames:2160,chapters:labels.map((title,i)=>({id:'s'+i,title,startFrame:secs[i]*30,durationFrames:(secs[i+1]-secs[i])*30,source:i===3?c.evidence:i===4||i===5?failed.cases[0].evidence:'bundle.json',playback:i===3?{type:'continuous_event_replay',startTick:0,endTick:919,seconds:24,ticksPerSecond:919/24,relativeTo24TickBase:919/24/24}:null}))};
+await writeFile(path.join(publicDir,'timeline.json'),JSON.stringify(timeline,null,2));
+await writeFile(path.join(dir,'evidence-ledger.json'),JSON.stringify({sourceDirectory:base,bundleHash:entry.bundleHash,sessionId:id,identity:'self-declared; not backend authenticated',review:'independent AI review, subjective design component',usage:null,cost:null,rows:[{subject:'scores',source:'bundle.json',verified:{objective:lb.objective,manual:data.manual,total:lb.total,coverage:93,passedCases:90,passedTasks:30}},{subject:'fleet-repair',source:c.evidence,recordHash:hash(await readFile(path.join(base,c.evidence),'utf8')),verified:{tick:919,reference:c.reference,passed:c.passed,failures:data.failures,actorStats},limits:'One displayed seed (7); all 3 seeds pass; do not claim all actions succeeded or balanced collaboration.'},{subject:'maze-3',source:failed.cases[0].evidence,recordHash:hash(await readFile(path.join(base,failed.cases[0].evidence),'utf8')),verified:{events:0,tick:0,sourceLine84:failed.answer.source.split('\n')[83],completion:0.5},limits:'No exploration occurred. Initial home goal explains partial completion.'}]},null,2));
+console.log(JSON.stringify({scores:{objective:lb.objective,manual:data.manual,total:lb.total},actorStats,failures:data.failures,finalInventory:run.result.state.inventory,economy:run.result.state.economy},null,2));

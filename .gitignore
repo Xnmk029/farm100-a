@@ -5,3 +5,10 @@ artifacts/
 *.log
 .DS_Store
 *.blend1
+.env
+.env.*
+!.env.example
+video/**/output/
+video/**/public/app.js
+video/**/public/app.js.map
+video/**/public/audio/*.wav

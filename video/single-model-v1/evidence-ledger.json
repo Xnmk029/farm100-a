@@ -1,0 +1,116 @@
+{
+  "sourceDirectory": "F:\\benchmark\\FARM100\\artifacts\\agent-gateway\\archives\\e4258be9-d9f0-4fa8-9a6c-4537490e2d19\\5b7ff421b8730f9aed7d6c61d6cfef2456c445cb2bd75bced9b446cadbe0095f",
+  "bundleHash": "5b7ff421b8730f9aed7d6c61d6cfef2456c445cb2bd75bced9b446cadbe0095f",
+  "sessionId": "e4258be9-d9f0-4fa8-9a6c-4537490e2d19",
+  "identity": "self-declared; not backend authenticated",
+  "review": "independent AI review, subjective design component",
+  "usage": null,
+  "cost": null,
+  "rows": [
+    {
+      "subject": "scores",
+      "source": "bundle.json",
+      "verified": {
+        "objective": 49.38487847051651,
+        "manual": 27.715277777777757,
+        "total": 77.10015624829427,
+        "coverage": 93,
+        "passedCases": 90,
+        "passedTasks": 30
+      }
+    },
+    {
+      "subject": "fleet-repair",
+      "source": "runs/fleet-repair-1/fleet-repair-7-4.json",
+      "recordHash": "aeb3976715cfbf946447dcfc7e8138cec414e401656ffb444b17fe9ed6560a1f",
+      "verified": {
+        "tick": 919,
+        "reference": 947,
+        "passed": true,
+        "failures": 8,
+        "actorStats": [
+          {
+            "id": 0,
+            "counts": {
+              "get_drone_count": 1,
+              "get_drone_id": 1,
+              "get_size": 1,
+              "get_position": 155,
+              "inspect": 32,
+              "repair": 8,
+              "water": 8,
+              "move": 45,
+              "harvest": 8,
+              "get_inventory": 4,
+              "craft": 1
+            },
+            "failures": 2,
+            "repair": 8,
+            "harvest": 8
+          },
+          {
+            "id": 1,
+            "counts": {
+              "get_drone_count": 1,
+              "get_drone_id": 1,
+              "get_size": 1,
+              "get_position": 96,
+              "move": 28,
+              "inspect": 16,
+              "get_inventory": 28,
+              "wait": 26
+            },
+            "failures": 2,
+            "repair": 0,
+            "harvest": 0
+          },
+          {
+            "id": 2,
+            "counts": {
+              "get_drone_count": 1,
+              "get_drone_id": 1,
+              "get_size": 1,
+              "get_position": 99,
+              "move": 29,
+              "inspect": 16,
+              "get_inventory": 28,
+              "wait": 26
+            },
+            "failures": 2,
+            "repair": 0,
+            "harvest": 0
+          },
+          {
+            "id": 3,
+            "counts": {
+              "get_drone_count": 1,
+              "get_drone_id": 1,
+              "get_size": 1,
+              "get_position": 102,
+              "move": 30,
+              "inspect": 16,
+              "get_inventory": 28,
+              "wait": 26
+            },
+            "failures": 2,
+            "repair": 0,
+            "harvest": 0
+          }
+        ]
+      },
+      "limits": "One displayed seed (7); all 3 seeds pass; do not claim all actions succeeded or balanced collaboration."
+    },
+    {
+      "subject": "maze-3",
+      "source": "runs/maze-3-2/maze-3-7-1.json",
+      "recordHash": "1d25356fafd88303f9bc45543ae7f5c22c81809ec3208d95b4308b0944ed5332",
+      "verified": {
+        "events": 0,
+        "tick": 0,
+        "sourceLine84": "}}}}",
+        "completion": 0.5
+      },
+      "limits": "No exploration occurred. Initial home goal explains partial completion."
+    }
+  ]
+}

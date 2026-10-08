@@ -1,0 +1,15 @@
+{
+  "version": "farm100-visual-v2.1-opart-20261004",
+  "status": "design-proposal-not-production-theme",
+  "palette": {"paper":"#FDFEFD","ink":"#171827","secondary":"#697184","blue":"#0017F7","black":"#020102","white":"#FAFEFD","cyan":"#00FCFA","darkSecondary":"#AAB2C2","rule":"#DCE0EA","side":"#C4CAD7"},
+  "grid": {"spacingPx":8,"materialPx":4},
+  "opArt": {"required":true,"implementation":"independent-reference-inspired-study","silhouette":"fixed-binary-mask","sampling":"nearest-neighbor","cycleSeconds":12,"seed":"stable-spatial-hash","heroMaterialPixelPx":4.5,"smallGlyphMaterialStepCells":2,"surfaceTextureCells":8,"surfaceBinding":"local-uv","surfaceSides":"solid-dark","codeAndScores":"untextured","reducedMotionPhase":0},
+  "camera": {"projection":"orthographic","units":"cell","tiltFromTopDegrees":{"audit":0,"work":48,"max":52},"yawDegrees":{"audit":0,"work":38},"perspective":false},
+  "geometry": {"groundThicknessCells":[0.04,0.08],"cropHeightCells":[0.18,0.65],"droneHeightCells":[0.35,0.55],"maxExplodeHeightCells":1.2,"maxExplodeLayers":3},
+  "durationMs": {"hover":120,"selection":180,"sidebar":320,"route":480,"spaceUnfold":800,"flatten":900,"explode":700,"reveal":800,"codeFocus":280,"scoreCommit":420},
+  "easing": {"ui":[0.22,1,0.36,1],"space":"6*t^5-15*t^4+10*t^3","overshoot":0},
+  "motionBudget": {"simultaneousStructural":1,"simultaneousLocal":1,"materialLoopSeconds":12,"maximumFlashesPerSecond":2},
+  "canvas": {"landscape":{"width":1920,"height":1080,"safe":[96,72,96,72]},"portrait":{"width":1080,"height":1920,"contentX":[88,992]},"fps":60},
+  "editorial": {"evidenceShareTarget":[0.65,0.75],"purePackagingMaxShare":0.1},
+  "reducedMotion": {"autoCamera":false,"explosion":false,"materialFlow":false,"stateChanges":"immediate"}
+}

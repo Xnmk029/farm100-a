@@ -8,9 +8,17 @@ const criterion=z.object({score:z.union([z.literal(0),z.literal(2.5),z.literal(5
 export const ReviewSchema=z.object({attemptId:z.string().min(1),reviewer:z.string().trim().min(1).max(100),strategy:criterion,correctness:criterion,complexity:criterion,boundaries:criterion}).strict();
 export type Review=z.infer<typeof ReviewSchema>&{revision:number;at:string};
 export function mergeImportedReviews(local:Review[],incoming:Review[]):Review[]{
- const protectedAttempts=new Set(local.map(r=>r.attemptId));
- let revision=local.at(-1)?.revision??0;
- return [...local,...incoming.filter(r=>!protectedAttempts.has(r.attemptId)).sort((a,b)=>a.revision-b.revision).map(r=>({...r,revision:++revision}))];
+ const identity=(r:Review)=>JSON.stringify({attemptId:r.attemptId,reviewer:r.reviewer,strategy:r.strategy,correctness:r.correctness,complexity:r.complexity,boundaries:r.boundaries,at:r.at});
+ const incomingIdentities=new Set(incoming.map(identity)),localIdentities=new Set(local.map(identity));
+ const additions=incoming.filter(r=>!localIdentities.has(identity(r))).sort((a,b)=>a.revision-b.revision);
+ if(!additions.length)return local;
+ const changedAttempts=new Set(additions.map(r=>r.attemptId));
+ const localConflicts=new Map<string,Review>();
+ for(const review of local)if(changedAttempts.has(review.attemptId)&&!incomingIdentities.has(identity(review)))localConflicts.set(review.attemptId,review);
+ let revision=Math.max(0,...local.map(r=>r.revision));
+ const appended=additions.map(r=>({...r,revision:++revision}));
+ const restored=[...localConflicts.values()].sort((a,b)=>a.revision-b.revision).map(r=>({...r,revision:++revision}));
+ return [...local,...appended,...restored];
 }
 export type Manifest={version:typeof BENCHMARK_VERSION;hash:string;frozenAt:string;tasks:Task[];references:Record<string,{primary:number;sourceHash:string;recordHash:string;file:string}>};
 export type Bundle={version:typeof BENCHMARK_VERSION;manifest:Manifest;models:string[];attempts:Attempt[];reviews:Review[];ledger:any[];providers:any[]};

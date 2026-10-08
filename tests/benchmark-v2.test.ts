@@ -21,6 +21,16 @@ test('import preserves local decisions while adding new answer reviews and remai
  assert.deepEqual(merged.slice(2).map(r=>r.strategy.score),[0,10]);
  assert.deepEqual(mergeImportedReviews(merged,incoming),merged);assert.deepEqual({local,incoming},snapshot);
 });
+test('import appends official corrections for existing attempts and keeps a divergent local decision latest',()=>{
+ const make=(attemptId:string,revision:number,score:0|2.5|5|7.5|10,at:string):Review=>({attemptId,revision,at,reviewer:'reviewer',...Object.fromEntries(MANUAL_KEYS.map(k=>[k,{score,reason:'evidence checked',evidence:['code:1']}]))} as Review);
+ const base=make('same',1,10,'2026-09-11T00:00:00Z'),correction=make('same',2,7.5,'2026-09-12T00:00:00Z');
+ const upgraded=mergeImportedReviews([base],[base,correction]);
+ assert.equal(upgraded.length,2);assert.equal(upgraded.at(-1)?.strategy.score,7.5);
+ const localDecision=make('same',2,5,'2026-09-11T12:00:00Z');
+ const conflicted=mergeImportedReviews([base,localDecision],[base,correction]);
+ assert.deepEqual(conflicted.map(r=>r.revision),[1,2,3,4]);assert.equal(conflicted.at(-1)?.strategy.score,5);
+ assert.deepEqual(mergeImportedReviews(conflicted,[base,correction]),conflicted);
+});
 test('objective score caps errors, excludes failed efficiency and handles zero metrics',()=>{
  assert.equal(gradeCase(input).correctness,15);assert.equal(gradeCase(input).efficiency,0);
  assert.equal(gradeCase({...input,normal:true}).correctness,30);

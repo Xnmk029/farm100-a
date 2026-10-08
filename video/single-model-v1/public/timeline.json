@@ -1,0 +1,71 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "totalFrames": 2160,
+  "chapters": [
+    {
+      "id": "s0",
+      "title": "开场定位",
+      "startFrame": 0,
+      "durationFrames": 180,
+      "source": "bundle.json",
+      "playback": null
+    },
+    {
+      "id": "s1",
+      "title": "具体跑分",
+      "startFrame": 180,
+      "durationFrames": 330,
+      "source": "bundle.json",
+      "playback": null
+    },
+    {
+      "id": "s2",
+      "title": "题目覆盖",
+      "startFrame": 510,
+      "durationFrames": 210,
+      "source": "bundle.json",
+      "playback": null
+    },
+    {
+      "id": "s3",
+      "title": "能力案例",
+      "startFrame": 720,
+      "durationFrames": 720,
+      "source": "runs/fleet-repair-1/fleet-repair-7-4.json",
+      "playback": {
+        "type": "continuous_event_replay",
+        "startTick": 0,
+        "endTick": 919,
+        "seconds": 24,
+        "ticksPerSecond": 38.291666666666664,
+        "relativeTo24TickBase": 1.595486111111111
+      }
+    },
+    {
+      "id": "s4",
+      "title": "错题定位",
+      "startFrame": 1440,
+      "durationFrames": 300,
+      "source": "runs/maze-3-2/maze-3-7-1.json",
+      "playback": null
+    },
+    {
+      "id": "s5",
+      "title": "指标解释",
+      "startFrame": 1740,
+      "durationFrames": 210,
+      "source": "runs/maze-3-2/maze-3-7-1.json",
+      "playback": null
+    },
+    {
+      "id": "s6",
+      "title": "结论与证据",
+      "startFrame": 1950,
+      "durationFrames": 210,
+      "source": "bundle.json",
+      "playback": null
+    }
+  ]
+}

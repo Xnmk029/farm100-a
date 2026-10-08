@@ -1,0 +1,9 @@
+const {app,BrowserWindow}=require('electron'),{start}=require('./server.cjs'),path=require('node:path'),fs=require('node:fs/promises'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');
+app.setPath('userData',path.join(__dirname,'output/page-profile'));app.commandLine.appendSwitch('disable-gpu');
+async function main(){const server=await start(),origin='http://127.0.0.1:'+server.address().port;await app.whenReady();const win=new BrowserWindow({show:false,width:1440,height:1080,webPreferences:{contextIsolation:true,nodeIntegration:false}});await win.loadURL(origin+'/evidence.html');
+ const q=await win.webContents.executeJavaScript(`({title:document.title,sections:document.querySelectorAll('section').length,brokenWidth:document.documentElement.scrollWidth>innerWidth,links:[...document.querySelectorAll('a')].map(a=>a.getAttribute('href'))})`);assert.equal(q.sections,4);assert.equal(q.brokenWidth,false);
+ const ledger=JSON.parse(await fs.readFile(path.join(__dirname,'evidence-ledger.json'),'utf8'));
+ for(const f of ledger.files){const url=origin+'/sources/'+f.attempt+'.txt',res=await fetch(url);assert(res.ok);assert.equal(createHash('sha256').update(await res.text()).digest('hex'),f.sourceHash);}
+ const selected=ledger.files[0],res=await fetch(origin+'/archive/'+selected.attempt+'.json');assert(res.ok);assert.equal(createHash('sha256').update(Buffer.from(await res.arrayBuffer())).digest('hex'),selected.sha256);
+ await fs.writeFile(path.join(__dirname,'output/evidence-page.png'),(await win.webContents.capturePage()).toPNG());await fs.writeFile(path.join(__dirname,'output/page-qa.json'),JSON.stringify({pass:true,...q,sourceLinksHashValidated:4,rawRunLinkHashValidated:true},null,2));console.log('PASS evidence page: layout, four original sources, original run download.');win.destroy();server.close();app.quit();}
+main().catch(e=>{console.error(e);app.exit(1)});

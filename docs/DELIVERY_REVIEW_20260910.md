@@ -31,7 +31,7 @@
 
 | 待删除目录 | 文件数 | 逻辑字节数 |
 | --- | ---: | ---: |
-| `F:\benchmark\FARM100\artifacts\windows-vm` | 94 | 34,674,563,951 |
+| `artifacts/windows-vm` | 94 | 34,674,563,951 |
 | `D:\FARM100-QA-W10-HV` | 2 | 67,454,164,992 |
 
 合计约 95.1 GiB，包含 partial ISO、克隆 VDI、动态/固定 VHD、下载的 VBox 安装包及测试日志。自动审批检查拒绝递归删除（仅返回 `blocked by policy`），因此仍在磁盘上，未计为已释放空间。`scripts/download-windows-eval.ps1`、`prepare-clean-windows.ps1`、`prepare-reused-windows.ps1` 和 `vbox-repair-*.ps1` 也待清理；本轮没有再次启动这些脚本。C 盘两次 `FARM100-VBoxLocalTest-*` 临时目录已不存在。

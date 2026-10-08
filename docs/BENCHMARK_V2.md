@@ -2,9 +2,9 @@
 
 本版新增独立模型评分工作台、版本化测试清单、真实调用器、预算账本、人工评分和可携带证据导出。保留原挑战评分 v1 与 Luna 单种子历史数据；它们不进入 v2 正式榜单。
 
-## 使用预览包
+## 在清理分支中运行
 
-启动 `release/scoring-v2-0.5.4-r2/win-unpacked/FARM100.exe`（保留整个目录），或安装同目录的 `FARM100 Setup 0.5.4-alpha.1.exe`。点击右下角“评分工作台 v2”，导入 `artifacts/scoring-v2/bundle.json`。预览 ZIP 解压后导入 `evidence/bundle.json`，必须保留其 references、runs、calls 子目录。
+本分支不携带 `release/` 安装包或 `artifacts/` 历史运行数据。安装依赖后执行 `pnpm dev` 启动源码版本；点击右下角“评分工作台 v2”，再导入你要核验的 `bundle.json`。ZIP 证据包解压后，请保留其 `references`、`runs`、`calls` 子目录。历史测试数据仍按原始状态留在源工作区，不随本分支复制。
 
 工作台提供首次/修订视图、逐题分项、真实事件、调用元数据、人工评分表与修改记录。JSON 导出会携带参考、运行与调用文件到同名 `.evidence` 文件夹。CSV 包含模型、题目、案例三级行及各评分维度；空白表示缺证/未评，不能当作零分。界面和 CSV 保留两位小数，JSON 保留计算精度。人工评分保存在本机应用数据目录，重新导入同一清单时保留已评且证据相同的提交。
 
@@ -33,11 +33,15 @@
 
 Spark 通过本机 Codex CLI 的正常 ChatGPT 登录实际调用；关闭 shell/multi_agent，使用独立空目录与临时上下文，未提取令牌拼接请求。运行横幅确认 `gpt-5.3-codex-spark`，未替换模型。
 
-Spark 曾因额度耗尽暂停，2026年9月11日额度短暂恢复后接续执行：lesson-wait/function/memory/path 首答通过，lesson-schedule 与 lesson-resources 两轮均因超时或未预期失败动作未过，随后 lesson-capstone 调用再次触发周额度限制并自动熔断回暂停检查点。当前 Spark 覆盖 68/93，尚缺 lesson-capstone 与 legacy-sort（24 例）两次调用；保留所有有效首答和一次修订，待额度恢复（提示为 9月15日）后可用 `--resume-infrastructure` 续跑。现有配额/鉴权/限流熔断和暂停检查点，未把基础设施错误算成解题失败。两模型最终覆盖率和分数以随包 `SCORES.md`、`report.json` 为准；逐题理由与难度观察分别见 `AI-REVIEW-REPORT.md`、`DIFFICULTY.md`。
+Spark 曾因额度耗尽暂停，额度恢复后从检查点接续完成，最终首答和修订榜均覆盖93/93。配额、鉴权和限流由熔断与检查点记录，未把基础设施问题算成解题失败。三模型最终覆盖率和分数以随包 `SCORES.md`、`report.json` 为准；逐题理由与难度观察分别见 `AI-REVIEW-REPORT.md`、`DIFFICULTY.md`。
+
+Grok Build Desktop 使用本机正常 OAuth 登录和官方 CLI 端点调用，不导出登录凭据。CLI 请求别名为 `grok-4.6`，每次响应的 `modelUsage` 均确认真实运行身份为 `grok-4.6-build`，高推理档、独立空目录、单轮且禁用子代理和联网。首次的挑战3、修订阶段的调度3均已完成模型调用，但返回JSON格式错误，分别未执行3个案例；两榜覆盖因此均为90/93，格式失败题的客观项计0，人工项为空，不发布正式总分。旧排序24/24通过。
+
+另提供非正式模型预估：从两个格式失败响应中各恢复最后一个完整答案对象，使用同一正式配置与种子7、19、99运行，再按相同40分量表评审。首次 `farm-3` 三例均通过，预估总榜76.33；修订后 `schedule-3` 三例均通过，预估总榜84.80。预估只写入 `PROJECTION-SCORES.md`、`projection-report.csv` 和 `projections/`，不改写正式榜或原始提交状态。
 
 OpenCode Go 的 DeepSeek-V4-Flash 与 MiMo-V2.5 试跑均返回401。直接 DeepSeek 官方端点接通并返回 `deepseek-flash`，与请求 `deepseek-v4-flash` 不同，按身份不匹配停止，没有静默接受别名，也没有进入批量榜单。仅保存配置来源与脱敏元数据。
 
-费用上限100元，当前已结算上界或未释放预留合计约0.11548元；这不是实际账单。Spark订阅额度另记，真实新增扣费未知时保持 null。失败API调用费用未确认为零，保留全额预留。公开价格依据：[OpenCode Go](https://opencode.ai/v2/docs/console/go)、[DeepSeek](https://api-docs.deepseek.com/quick_start/pricing/)。Go按输入0.14/输出0.28美元每百万token，DeepSeek按峰值输入0.44/输出1.32；人民币使用10元/美元的保守预算上界，不声称是结算汇率。套餐可能回落余额消费，也预留费用。未确认用途/计费的其他服务未批量调用。
+费用上限100元，当前已结算上界或未释放预留合计19.74215880元；这不是实际账单。Codex订阅额度另记；Grok Build 采用CLI报告美元成本，按10元/美元换算为人民币预算上界。超时或中断且没有明确结算依据的调用不按零计算，继续保留完整预留。公开价格依据：[OpenCode Go](https://opencode.ai/v2/docs/console/go)、[DeepSeek](https://api-docs.deepseek.com/quick_start/pricing/)。未确认用途或计费的其他服务未批量调用。
 
 ## 执行与恢复
 
@@ -57,8 +61,8 @@ pnpm benchmark:v2 --resume-infrastructure --model=gpt-5.3-codex-spark
 
 ## 验证与交付边界
 
-64项现有与新增回归通过；v2覆盖清单、异常上限、超额补偿、预期失败、多机去重、配置隔离、人工校验、首次/修订隔离、预算边界和增量评审导入。Electron端额外测试真实IPC导入、伪造分数拒绝、人工表单、并发版本拒绝、可携带JSON复验、CSV同源计算与页面重开。r2成品包证据在 `artifacts/scoring-v2/ai-review-package-qa-r2/` 与 `v1-package-regression-r2-retry/`。旧界面首次并行验收发生资源20秒未就绪，单独复测通过，初次失败记录保留。
+65项现有与新增回归通过；v2覆盖清单、异常上限、超额补偿、预期失败、多机去重、配置隔离、人工校验、首次/修订隔离、预算边界，以及同题追加修订与本地冲突保护。Electron端额外测试真实IPC增量升级、伪造分数拒绝、缺失账本拒绝、明确付费调用的单边账本篡改拒绝、调用与账本双边改价拒绝、原始Grok费用复算、人工表单、并发版本拒绝、可携带JSON复验、CSV同源计算与页面重开。修正后成品包证据在 `artifacts/scoring-v2/astra-corrected-package-qa-r4/` 与 `v1-package-regression-r2-retry/`。旧界面首次并行验收发生资源20秒未就绪，单独复测通过，初次失败记录保留。
 
 安装包目前未签名；本轮验证了打包后程序运行和评分流程，未恢复虚拟机安装测试。
 
-这是评分系统预览。当前两模型为 Spark 与 Luna；用户已授权主助手完成40分AI评审，逐项理由与首次/修订分数见随包 AI-REVIEW-REPORT.md。只有证据与评审齐全的模型才发布正式总分，缺证模型继续显示覆盖率。Windows10虚拟机验收保持暂停；旧产品长记录等待等限制仍见此前交付检查。
+这是评分系统预览。当前模型为 Spark、Luna 与 Grok 4.6 Build；用户已授权主助手完成40分AI评审，逐项理由与首次/修订分数见随包 AI-REVIEW-REPORT.md。只有证据与评审齐全的模型才发布正式总分，Grok 因每个阶段各一题提交格式缺失而只显示90/93覆盖率及已完成分项。Windows10虚拟机验收保持暂停；旧产品长记录等待等限制仍见此前交付检查。

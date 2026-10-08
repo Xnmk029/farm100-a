@@ -1,0 +1,94 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>FARM100 · 证据页</title><style>body{max-width:1120px;margin:40px auto;padding:0 24px;background:#f6f5f1;color:#15151b;font:18px/1.7 'Microsoft YaHei',sans-serif}h1,h2{line-height:1.3}a{color:#0017f7}section,details{background:#fff;padding:24px;margin:20px 0}pre{white-space:pre-wrap;word-break:break-all;background:#eee;padding:16px;font:15px/1.6 Consolas}code{word-break:break-all}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:10px;text-align:left}.tag{color:#0017f7}</style><h1>FARM100 · 两份真实修订案例</h1><p class="tag">Codex 子代理 / GPT-6.1 Sol / high · 网关身份自报</p><p>本页对应原始会话 <code>f2dd6a7c-16de-42f8-8dcf-abcb592b3dc5</code>。影片用种子7展开讲解，表格保留三个规定种子。29/31题首答通过、31/31题修订后通过；本片选中的是仅有的两道失败首答，不据此概括全部能力。</p><p><a href="/">导播预览</a> · <a href="evidence-ledger.json">结论台账及来源哈希</a> · <a href="data.json">展示派生数据</a> · <a href="/archive/bundle.json">含评审原始归档包</a></p><section id="maze-3"><h2>maze-3</h2><p><a href="/?story=maze-3">进入可拖动导播预览</a> · <a href="maze-3.srt">字幕</a></p><table><tr><th>提交</th><th>种子7终止</th><th>tick</th><th>动作失败</th><th>3种子通过</th></tr><tr><td>maze-3-1</td><td>recording_limit</td><td>22165</td><td>1121</td><td>0/3</td></tr><tr><td>maze-3-2</td><td>finished</td><td>1292</td><td>0</td><td>3/3</td></tr></table><details><summary>maze-3-1 原始源码、运行与证据</summary><p><a href="sources/maze-3-1.txt">原始单行源码</a> · <a href="/archive/maze-3-1.json">完整原始运行JSON</a></p><p>源码SHA-256：<code>db80ea72e48aae12e984f63e7b15cb8cb8c1e05f92df5cb1fe60441c086f5b37</code></p><pre>const dirs=[North,East,South,West],opp=[South,West,North,East],names=[&quot;north&quot;,&quot;east&quot;,&quot;south&quot;,&quot;west&quot;];function loot(v){if(!v)return false;if(typeof v===&quot;string&quot;)return /key|relic/i.test(v);if(Array.isArray(v))return v.some(loot);if(typeof v===&quot;object&quot;)return Object.entries(v).some(([k,w])=&gt;(/^(key|keys|relic|relics)$/i.test(k)&amp;&amp;!!w)||loot(w));return false;}function exit(s,i){const e=s.exits;if(Array.isArray(e))return e.some(v=&gt;String(typeof v===&quot;object&quot;?v.direction||v.dir:v).toLowerCase()===names[i]);if(e&amp;&amp;typeof e===&quot;object&quot;){for(const k of Object.keys(e))if(k.toLowerCase()===names[i])return !!e[k];return false;}return true;}let changed=true;while(changed){changed=false;const seen=new Set();function dfs(){const p=get_position();seen.add(p.x+','+p.y);let s=sense();if(loot(s)){collect();changed=true;}for(let i=0;i&lt;4;i++){s=sense();const k=(p.x+[0,1,0,-1][i])+','+(p.y+[-1,0,1,0][i]);if(!seen.has(k)&amp;&amp;exit(s,i)&amp;&amp;move(dirs[i])){dfs();move(opp[i]);}}}dfs();}</pre><p>关键事件：</p><pre>[
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 9,
+    &quot;tick&quot;: 17,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 1,
+    &quot;value&quot;: &quot;key&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  },
+  {
+    &quot;kind&quot;: &quot;first-false&quot;,
+    &quot;seq&quot;: 16,
+    &quot;tick&quot;: 32,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 2,
+    &quot;value&quot;: false,
+    &quot;action&quot;: &quot;collect&quot;
+  },
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 396,
+    &quot;tick&quot;: 875,
+    &quot;x&quot;: 1,
+    &quot;y&quot;: 5,
+    &quot;value&quot;: &quot;relic&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  },
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 406,
+    &quot;tick&quot;: 896,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 6,
+    &quot;value&quot;: &quot;relic&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  },
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 413,
+    &quot;tick&quot;: 911,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 7,
+    &quot;value&quot;: &quot;relic&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  }
+]</pre></details><details><summary>maze-3-2 原始源码、运行与证据</summary><p><a href="sources/maze-3-2.txt">原始单行源码</a> · <a href="/archive/maze-3-2.json">完整原始运行JSON</a></p><p>源码SHA-256：<code>fa6675292206a94771b3ccdfb8bfbbd06b21fcaa4672a9a58bd110d8697424b0</code></p><pre>const dirs=[North,East,South,West],opp=[South,West,North,East],names=[&quot;north&quot;,&quot;east&quot;,&quot;south&quot;,&quot;west&quot;];function loot(v){if(!v)return false;if(typeof v===&quot;string&quot;)return /key|relic/i.test(v);if(Array.isArray(v))return v.some(loot);if(typeof v===&quot;object&quot;)return Object.entries(v).some(([k,w])=&gt;(/^(key|keys|relic|relics)$/i.test(k)&amp;&amp;!!w)||loot(w));return false;}function exit(s,i){const e=s.exits;if(Array.isArray(e))return e.some(v=&gt;String(typeof v===&quot;object&quot;?v.direction||v.dir:v).toLowerCase()===names[i]);if(e&amp;&amp;typeof e===&quot;object&quot;){for(const k of Object.keys(e))if(k.toLowerCase()===names[i])return !!e[k];return false;}return true;}const collected=new Set();let changed=true;while(changed){changed=false;const seen=new Set();function dfs(){const p=get_position(),k=p.x+','+p.y;seen.add(k);let s=sense();const local=s.loot!==undefined?s.loot:{key:s.key,relic:s.relic};if(loot(local)&amp;&amp;!collected.has(k)){collect();collected.add(k);changed=true;s=sense();}for(let i=0;i&lt;4;i++){const z=(p.x+[0,1,0,-1][i])+','+(p.y+[-1,0,1,0][i]);if(!seen.has(z)&amp;&amp;exit(s,i)&amp;&amp;move(dirs[i])){dfs();move(opp[i]);}}}dfs();}</pre><p>关键事件：</p><pre>[
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 6,
+    &quot;tick&quot;: 14,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 1,
+    &quot;value&quot;: &quot;key&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  },
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 183,
+    &quot;tick&quot;: 397,
+    &quot;x&quot;: 1,
+    &quot;y&quot;: 5,
+    &quot;value&quot;: &quot;relic&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  },
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 189,
+    &quot;tick&quot;: 414,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 6,
+    &quot;value&quot;: &quot;relic&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  },
+  {
+    &quot;kind&quot;: &quot;collect&quot;,
+    &quot;seq&quot;: 194,
+    &quot;tick&quot;: 427,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 7,
+    &quot;value&quot;: &quot;relic&quot;,
+    &quot;action&quot;: &quot;collect&quot;
+  }
+]</pre></details></section><section id="fleet-harvest"><h2>fleet-harvest</h2><p><a href="/?story=fleet-harvest">进入可拖动导播预览</a> · <a href="fleet-harvest.srt">字幕</a></p><table><tr><th>提交</th><th>种子7终止</th><th>tick</th><th>动作失败</th><th>3种子通过</th></tr><tr><td>fleet-harvest-1</td><td>budget_exceeded</td><td>4264</td><td>5936</td><td>0/3</td></tr><tr><td>fleet-harvest-2</td><td>finished</td><td>172</td><td>0</td><td>3/3</td></tr></table><details><summary>fleet-harvest-1 原始源码、运行与证据</summary><p><a href="sources/fleet-harvest-1.txt">原始单行源码</a> · <a href="/archive/fleet-harvest-1.json">完整原始运行JSON</a></p><p>源码SHA-256：<code>910c09a9f0f053818d3151428ca39bb56ea5bb9b267243b08dbbcb476f570a67</code></p><pre>const n=get_size(),id=get_drone_id(),d=get_drone_count();function go(x,y){let p=get_position();while(p.x&lt;x){move(East);p=get_position();}while(p.x&gt;x){move(West);p=get_position();}while(p.y&lt;y){move(North);p=get_position();}while(p.y&gt;y){move(South);p=get_position();}}for(let y=id;y&lt;n;y+=d){for(let j=0;j&lt;n;j++){let x=y%2?n-1-j:j;go(x,y);if(inspect().ready)harvest();}}</pre><p>关键事件：</p><pre>[
+  {
+    &quot;kind&quot;: &quot;first-false&quot;,
+    &quot;seq&quot;: 76,
+    &quot;tick&quot;: 8,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0,
+    &quot;value&quot;: false,
+    &quot;action&quot;: &quot;move&quot;
+  }
+]</pre></details><details><summary>fleet-harvest-2 原始源码、运行与证据</summary><p><a href="sources/fleet-harvest-2.txt">原始单行源码</a> · <a href="/archive/fleet-harvest-2.json">完整原始运行JSON</a></p><p>源码SHA-256：<code>e08a08d3eaedc2d273829d68ca3aa54143dc7ae3e3b7b6f49516e20e15b04a02</code></p><pre>const n=get_size(),id=get_drone_id(),d=get_drone_count();function go(x,y){let p=get_position();while(p.x&lt;x){move(East);p=get_position();}while(p.x&gt;x){move(West);p=get_position();}while(p.y&lt;y){move(South);p=get_position();}while(p.y&gt;y){move(North);p=get_position();}}for(let y=id;y&lt;n;y+=d){for(let j=0;j&lt;n;j++){let x=y%2?n-1-j:j;go(x,y);if(inspect().ready)harvest();}}</pre><p>关键事件：</p><pre>[]</pre></details></section><section><h2>每一项判断的出处</h2><p><strong>M1 / record</strong>：maze-3首答触发记录上限，修订seed7于1292 tick结束并通过<br>来源：maze-3/7/1@maze-3-1、maze-3/7/1@maze-3-2</p><p><strong>M2 / derived</strong>：首答seed7有1121次collect返回false<br>来源：maze-3-1<br>计算：count action=collect,value=false; exclude dispatch</p><p><strong>M3 / code-analysis</strong>：loot(s)会将全局keys误识别为本地物品；collect失败仍令changed=true，反复重启DFS<br>来源：maze-3-1.js<br>限制：related implementation, not recorded execution-line tracing</p><p><strong>M4 / code-analysis</strong>：修订限制为本地loot并用collected集合去重<br>来源：maze-3-2.js</p><p><strong>F1 / record</strong>：fleet-harvest seed7首答8/64收获，修订64/64且172 tick结束<br>来源：fleet-harvest-1、fleet-harvest-2</p><p><strong>F2 / code-analysis</strong>：首答y需增加时向North移动，与坐标约定相反；修订交换South/North<br>来源：fleet-harvest-1.js、fleet-harvest-2.js</p></section><section><h2>阅读边界</h2><p>“原始事件重建”不是客户端录屏；模拟tick不是生成耗时。全知地图不代表程序已获得全部信息。浅色区域表示引擎尚未访问，不是程序内部seen集合。源码摘录为相关实现，没有冒充当前执行行。首答和修订共同使用同一tick映射，终态另标跳时。</p><p>失败动作统计排除dispatch和系统终止记录；收获统计只计complete，防止多机双计数。源码未经修复或诊断重跑；所有展示均消费原归档。本页客观分按原判题，独立AI设计评审不在本片分数中。</p><p>主机派发配置佐证gpt-6.1-sol/high，但不认证后端身份。完整宿主访问审计、真实观众测试及平台二次压缩仍未验证。Token和费用未知。</p><p>归档包SHA-256：<code>49f0c891f990e1e09141ea3bd5a918a3e0a7f5bde28e417d4f85f0fc617528d6</code></p><p>原始目录：<code>artifacts/agent-gateway/archives/<session-id>/<bundle-hash></code></p></section></html>
